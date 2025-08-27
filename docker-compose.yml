@@ -9,8 +9,6 @@ services:
       - POSTGRES_DB=nexus
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=admin
-    volumes:
-      - ./uploads:/app/uploads
   nexus-db:
     image: postgres:15
     environment:
