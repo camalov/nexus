@@ -16,7 +16,7 @@ public class ChatController {
     private final SimpMessagingTemplate messagingTemplate;
     private final MessageService messageService;
 
-    @MessageMapping("/chat.send")
+    @MessageMapping("/chat/message")
     public void sendMessage(@Payload ChatMessageDto chatMessageDto) {
         Message savedMessage = messageService.saveMessage(chatMessageDto);
 
