@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class NexusApplication {
 
 	public static void main(String[] args) {
+		// A small change to test Docker layer caching.
 		SpringApplication.run(NexusApplication.class, args);
 	}
 
