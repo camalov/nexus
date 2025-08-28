@@ -14,6 +14,10 @@ public class Message {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MessageType type;
+
     @ManyToOne
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;

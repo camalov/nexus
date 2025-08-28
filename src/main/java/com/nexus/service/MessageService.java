@@ -28,6 +28,7 @@ public class MessageService {
         message.setRecipient(recipient);
         message.setContent(chatMessageDto.getContent());
         message.setTimestamp(LocalDateTime.now());
+        message.setType(chatMessageDto.getType());
 
         return messageRepository.save(message);
     }
