@@ -1,26 +1,25 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Container, Box, TextField, Button, Typography, Alert } from '@mui/material';
-import { useAuth } from '../context/AuthContext';
+import authService from '../services/authService';
 
-const LoginPage = () => {
+const RegisterPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const { login } = useAuth();
     const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
+    const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
 
         try {
-            await login(username, password);
-            navigate('/');
+            await authService.register(username, password);
+            navigate('/login');
         } catch (err) {
-            setError('Login failed. Please check your username and password.');
+            setError('Registration failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -37,9 +36,9 @@ const LoginPage = () => {
                 }}
             >
                 <Typography component="h1" variant="h5">
-                    Sign in to Nexus
+                    Register for Nexus
                 </Typography>
-                <Box component="form" onSubmit={handleLogin} noValidate sx={{ mt: 1 }}>
+                <Box component="form" onSubmit={handleRegister} noValidate sx={{ mt: 1 }}>
                     <TextField
                         margin="normal"
                         required
@@ -60,7 +59,7 @@ const LoginPage = () => {
                         label="Password"
                         type="password"
                         id="password"
-                        autoComplete="current-password"
+                        autoComplete="new-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
@@ -72,10 +71,10 @@ const LoginPage = () => {
                         sx={{ mt: 3, mb: 2 }}
                         disabled={loading}
                     >
-                        {loading ? 'Signing In...' : 'Sign In'}
+                        {loading ? 'Registering...' : 'Register'}
                     </Button>
-                    <Link to="/register" variant="body2">
-                        {"Don't have an account? Sign Up"}
+                    <Link to="/login" variant="body2">
+                        Already have an account? Sign in
                     </Link>
                 </Box>
             </Box>
@@ -83,4 +82,4 @@ const LoginPage = () => {
     );
 };
 
-export default LoginPage;
+export default RegisterPage;
