@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/changelog/changes/004-add-status-to-messages.yaml
   - include:
       file: db/changelog/changes/005-add-expiration-to-messages.yaml
+  - include:
+      file: db/changelog/changes/006-add-default-admin-user.yaml
