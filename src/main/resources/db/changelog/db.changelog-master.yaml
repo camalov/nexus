@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/changes/002-create-messages-table.yaml
   - include:
       file: db/changelog/changes/003-add-type-to-messages.yaml
+  - include:
+      file: db/changelog/changes/004-add-status-to-messages.yaml
