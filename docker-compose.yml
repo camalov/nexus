@@ -11,8 +11,19 @@ services:
       - POSTGRES_PASSWORD=admin
     volumes:
       - ./uploads:/app/uploads
+
+  nexus-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - nexus-app
+
   nexus-db:
-    image: postgres:15
+    # Using the PostgreSQL image from Amazon ECR Public Gallery
+    image: public.ecr.aws/docker/library/postgres:15
     environment:
       - POSTGRES_DB=nexus
       - POSTGRES_USER=admin
