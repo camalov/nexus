@@ -35,4 +35,7 @@ public class Message {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MessageStatus status;
+
+    @Column(nullable = true)
+    private LocalDateTime expiresAt;
 }

@@ -32,6 +32,10 @@ public class MessageService {
         message.setType(chatMessageDto.getType());
         message.setStatus(MessageStatus.SENT);
 
+        if (chatMessageDto.isEphemeral()) {
+            message.setExpiresAt(LocalDateTime.now().plusHours(24));
+        }
+
         return messageRepository.save(message);
     }
 

@@ -9,4 +9,5 @@ public class ChatMessageDto {
     private String recipientUsername;
     private String content;
     private MessageType type;
+    private boolean ephemeral = false;
 }
