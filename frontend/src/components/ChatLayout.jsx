@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Divider } from '@mui/material';
 import userService from '../services/userService';
@@ -6,6 +7,12 @@ import socketService from '../services/socketService';
 import authService from '../services/authService';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
+
+// frontend/src/components/ChatLayout.jsx
+import React, { useState, useEffect } from 'react';
+import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Divider } from '@mui/material';
+import userService from '../services/userService';
+
 
 const ChatLayout = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -41,6 +48,7 @@ const ChatLayout = () => {
         return () => {
             if (debounceTimeout) clearTimeout(debounceTimeout);
         };
+
     }, [searchQuery, currentUser.username]);
 
     useEffect(() => {
@@ -87,6 +95,9 @@ const ChatLayout = () => {
     return (
         <Box sx={{ flexGrow: 1, height: '100vh', display: 'flex' }}>
             <Grid container sx={{ height: '100%' }}>
+
+                {/* User List / Search Area */}
+
                 <Grid item xs={12} sm={4} md={3} sx={{
                     borderRight: { sm: '1px solid #ddd' },
                     height: '100%',
@@ -123,15 +134,20 @@ const ChatLayout = () => {
                     )}
                 </Grid>
 
+
+                {/* Chat Window Area */}
+
                 <Grid item xs={12} sm={8} md={9} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Paper elevation={2} sx={{ padding: 2 }}>
                         <Typography variant="h6">
                             {selectedUser ? `Chat with ${selectedUser.username}` : 'Select a user to start chatting'}
                         </Typography>
                     </Paper>
+
                     <MessageList messages={messages} />
                     <div ref={messagesEndRef} />
                     {selectedUser && <MessageInput onSendMessage={handleSendMessage} />}
+
                 </Grid>
             </Grid>
         </Box>
