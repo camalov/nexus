@@ -3,7 +3,9 @@ package com.nexus.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -16,9 +18,13 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // IMPORTANT: In a real application, this key should be loaded from a secure configuration source.
-    private static final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    private final Key secretKey;
     private static final long JWT_EXPIRATION = 1000 * 60 * 60 * 24; // 24 hours
+
+    public JwtService(@Value("${jwt.secret}") String secret) {
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
+        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -39,7 +45,7 @@ public class JwtService {
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
-                .signWith(SECRET_KEY, SignatureAlgorithm.HS256)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -58,7 +64,7 @@ public class JwtService {
 
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
-                .setSigningKey(SECRET_KEY)
+                .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
