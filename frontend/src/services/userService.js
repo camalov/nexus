@@ -1,14 +1,14 @@
+// frontend/src/services/userService.js
 import axios from 'axios';
-
-const API_URL = '/nexus/api/users';
+import authService from './authService';
 
 const apiClient = axios.create({
-    baseURL: API_URL,
+    baseURL: '/nexus/api',
 });
 
 apiClient.interceptors.request.use(
     (config) => {
-        const user = JSON.parse(localStorage.getItem('user'));
+        const user = authService.getCurrentUser();
         if (user && user.token) {
             config.headers['X-Authorization'] = `Bearer ${user.token}`;
         }
@@ -19,8 +19,9 @@ apiClient.interceptors.request.use(
     }
 );
 
+// FIX: Changed '?query=' to '?username=' to match the backend controller
 export const searchUsers = (query) => {
-    return apiClient.get(`/search?query=${query}`);
+    return apiClient.get(`/users/search?username=${query}`);
 };
 
 const userService = {
