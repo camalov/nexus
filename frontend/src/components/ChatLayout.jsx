@@ -1,14 +1,28 @@
+
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Divider } from '@mui/material';
+import userService from '../services/userService';
+import messageService from '../services/messageService';
+import socketService from '../services/socketService';
+import authService from '../services/authService';
+import MessageList from './MessageList';
+import MessageInput from './MessageInput';
+
 // frontend/src/components/ChatLayout.jsx
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Divider } from '@mui/material';
 import userService from '../services/userService';
 
+
 const ChatLayout = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [debounceTimeout, setDebounceTimeout] = useState(null);
+    const currentUser = authService.getCurrentUser();
+    const messagesEndRef = useRef(null);
 
     useEffect(() => {
         if (debounceTimeout) {
@@ -19,7 +33,7 @@ const ChatLayout = () => {
                 setLoading(true);
                 try {
                     const response = await userService.searchUsers(searchQuery);
-                    setUsers(response.data);
+                    setUsers(response.data.filter(user => user.username !== currentUser.username));
                 } catch (error) {
                     console.error('Failed to search users:', error);
                     setUsers([]);
@@ -34,16 +48,56 @@ const ChatLayout = () => {
         return () => {
             if (debounceTimeout) clearTimeout(debounceTimeout);
         };
-    }, [searchQuery]);
+
+    }, [searchQuery, currentUser.username]);
+
+    useEffect(() => {
+        if (selectedUser) {
+            const fetchMessages = async () => {
+                try {
+                    const response = await messageService.getMessageHistory(currentUser.id, selectedUser.id);
+                    setMessages(response.data);
+                } catch (error) {
+                    console.error('Failed to fetch message history:', error);
+                    setMessages([]);
+                }
+            };
+            fetchMessages();
+
+            socketService.connect(currentUser.username, (message) => {
+                setMessages((prevMessages) => [...prevMessages, message]);
+            });
+
+            return () => {
+                socketService.disconnect();
+            };
+        }
+    }, [selectedUser, currentUser.id, currentUser.username]);
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const handleUserSelect = (user) => {
         setSelectedUser(user);
     };
 
+    const handleSendMessage = (content) => {
+        const message = {
+            sender: { username: currentUser.username },
+            recipient: { username: selectedUser.username },
+            content: content,
+        };
+        socketService.sendMessage(message);
+        setMessages((prevMessages) => [...prevMessages, message]);
+    };
+
     return (
         <Box sx={{ flexGrow: 1, height: '100vh', display: 'flex' }}>
             <Grid container sx={{ height: '100%' }}>
+
                 {/* User List / Search Area */}
+
                 <Grid item xs={12} sm={4} md={3} sx={{
                     borderRight: { sm: '1px solid #ddd' },
                     height: '100%',
@@ -80,19 +134,20 @@ const ChatLayout = () => {
                     )}
                 </Grid>
 
+
                 {/* Chat Window Area */}
+
                 <Grid item xs={12} sm={8} md={9} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Paper elevation={2} sx={{ padding: 2 }}>
                         <Typography variant="h6">
                             {selectedUser ? `Chat with ${selectedUser.username}` : 'Select a user to start chatting'}
                         </Typography>
                     </Paper>
-                    <Box sx={{ flexGrow: 1, padding: 2, overflowY: 'auto' }}>
-                        {/* Messages will be displayed here */}
-                    </Box>
-                    <Box sx={{ p: 2, backgroundColor: '#f5f5f5' }}>
-                        {/* Message input will be here */}
-                    </Box>
+
+                    <MessageList messages={messages} />
+                    <div ref={messagesEndRef} />
+                    {selectedUser && <MessageInput onSendMessage={handleSendMessage} />}
+
                 </Grid>
             </Grid>
         </Box>
