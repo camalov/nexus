@@ -1,14 +1,16 @@
 package com.nexus.model.dto;
 
-import com.nexus.model.entity.MessageStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Set;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MessageStatusUpdateDto {
-    private Long messageId;
-    private MessageStatus status;
+public class UserDetailsDto {
+    private Long id;
+    private String username;
+    private Set<String> roles;
 }

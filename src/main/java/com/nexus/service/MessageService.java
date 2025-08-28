@@ -2,7 +2,6 @@ package com.nexus.service;
 
 import com.nexus.model.dto.ChatMessageDto;
 import com.nexus.model.entity.Message;
-import com.nexus.model.entity.MessageStatus;
 import com.nexus.model.entity.User;
 import com.nexus.repository.MessageRepository;
 import com.nexus.repository.UserRepository;
@@ -29,25 +28,7 @@ public class MessageService {
         message.setRecipient(recipient);
         message.setContent(chatMessageDto.getContent());
         message.setTimestamp(LocalDateTime.now());
-        message.setType(chatMessageDto.getType());
-        message.setStatus(MessageStatus.SENT);
-
-        if (chatMessageDto.isEphemeral()) {
-            message.setExpiresAt(LocalDateTime.now().plusHours(24));
-        }
 
         return messageRepository.save(message);
-    }
-
-    public void updateStatus(Long messageId, MessageStatus status) {
-        Message message = messageRepository.findById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
-        message.setStatus(status);
-        messageRepository.save(message);
-    }
-
-    public Message getMessageById(Long messageId) {
-        return messageRepository.findById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
     }
 }
