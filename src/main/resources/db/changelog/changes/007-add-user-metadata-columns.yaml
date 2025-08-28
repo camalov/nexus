@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 7
+      author: Jules
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: last_login_ip
+                  type: VARCHAR(255)
+              - column:
+                  name: device_details
+                  type: VARCHAR(255)
+              - column:
+                  name: last_login_timestamp
+                  type: TIMESTAMP
