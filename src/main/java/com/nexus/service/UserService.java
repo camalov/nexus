@@ -1,6 +1,9 @@
 package com.nexus.service;
 
+import com.nexus.model.dto.UserDetailsDto;
 import com.nexus.model.dto.UserSearchDto;
+import com.nexus.model.entity.Role;
+import com.nexus.model.entity.User;
 import com.nexus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,5 +22,28 @@ public class UserService {
                 .stream()
                 .map(user -> new UserSearchDto(user.getId(), user.getUsername()))
                 .collect(Collectors.toList());
+    }
+
+    public List<UserDetailsDto> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(this::mapToUserDetailsDto)
+                .collect(Collectors.toList());
+    }
+
+    public UserDetailsDto getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .map(this::mapToUserDetailsDto)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    private UserDetailsDto mapToUserDetailsDto(User user) {
+        return new UserDetailsDto(
+                user.getId(),
+                user.getUsername(),
+                user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()),
+                user.getLastLoginIp(),
+                user.getDeviceDetails(),
+                user.getLastLoginTimestamp()
+        );
     }
 }

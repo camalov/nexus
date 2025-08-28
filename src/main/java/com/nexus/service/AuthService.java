@@ -7,12 +7,14 @@ import com.nexus.model.entity.Role;
 import com.nexus.model.entity.User;
 import com.nexus.repository.RoleRepository;
 import com.nexus.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Service
@@ -44,7 +46,7 @@ public class AuthService {
         return new AuthResponse(jwtToken);
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request, HttpServletRequest httpServletRequest) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsername(),
@@ -54,6 +56,11 @@ public class AuthService {
 
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid username or password"));
+
+        user.setLastLoginIp(httpServletRequest.getRemoteAddr());
+        user.setDeviceDetails(httpServletRequest.getHeader("User-Agent"));
+        user.setLastLoginTimestamp(LocalDateTime.now());
+        userRepository.save(user);
 
         String jwtToken = jwtService.generateToken(user);
         return new AuthResponse(jwtToken);
