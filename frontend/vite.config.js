@@ -8,12 +8,12 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/nexus/api': {
-        target: 'http://localhost:8080',
+        target: 'http://nexus-app:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/nexus\/api/, '')
       },
       '/ws': {
-        target: 'http://localhost:8080',
+        target: 'http://nexus-app:8080',
         ws: true,
       },
     },
