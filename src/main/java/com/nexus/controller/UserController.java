@@ -27,6 +27,6 @@ public class UserController {
 
     @GetMapping("/contacts")
     public ResponseEntity<List<UserSearchDto>> getContacts(@AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(userService.getContacts(currentUser.getId()));
+        return ResponseEntity.ok(userService.getContactsWithOnlineStatus(currentUser.getId()));
     }
 }
