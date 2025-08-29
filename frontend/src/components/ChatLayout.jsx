@@ -18,11 +18,24 @@ const ChatLayout = () => {
     const currentUser = authService.getCurrentUser();
     const messagesEndRef = useRef(null);
 
+    // Connect to WebSocket on component mount
+    useEffect(() => {
+        socketService.connect(() => {
+            // Subscribe to personal message queue after connection
+            socketService.subscribe(`/user/${currentUser.username}/queue/messages`, (newMessage) => {
+                setMessages((prevMessages) => [...prevMessages, newMessage]);
+            });
+        });
+
+        // Disconnect on component unmount
+        return () => {
+            socketService.disconnect();
+        };
+    }, [currentUser.username]);
+
     // Debounced user search
     useEffect(() => {
-        if (debounceTimeout) {
-            clearTimeout(debounceTimeout);
-        }
+        if (debounceTimeout) clearTimeout(debounceTimeout);
         if (searchQuery.trim()) {
             const timeout = setTimeout(async () => {
                 setLoading(true);
@@ -45,7 +58,7 @@ const ChatLayout = () => {
         };
     }, [searchQuery, currentUser.username]);
 
-    // Fetch messages and connect to WebSocket when a user is selected
+    // Fetch message history when a user is selected
     useEffect(() => {
         if (selectedUser) {
             const fetchMessages = async () => {
@@ -58,19 +71,8 @@ const ChatLayout = () => {
                 }
             };
             fetchMessages();
-
-            socketService.connect(currentUser.username, (message) => {
-                // Only add the message if it's part of the current conversation
-                if (message.senderUsername === selectedUser.username || message.senderUsername === currentUser.username) {
-                   setMessages((prevMessages) => [...prevMessages, message]);
-                }
-            });
-
-            return () => {
-                socketService.disconnect();
-            };
         }
-    }, [selectedUser, currentUser.id, currentUser.username]);
+    }, [selectedUser, currentUser.id]);
 
     // Auto-scroll to the latest message
     useEffect(() => {
@@ -86,45 +88,26 @@ const ChatLayout = () => {
             senderUsername: currentUser.username,
             recipientUsername: selectedUser.username,
             content: content,
-            type: 'TEXT',
+            type: 'TEXT'
         };
         socketService.sendMessage('/app/chat.send', message);
-        // Optimistically add the sent message to the UI
-        setMessages((prevMessages) => [...prevMessages, message]);
     };
 
     return (
         <Box sx={{ flexGrow: 1, height: '100vh', display: 'flex' }}>
             <Grid container sx={{ height: '100%' }}>
-                {/* User List / Search Area */}
-                <Grid item xs={12} sm={4} md={3} sx={{
-                    borderRight: { sm: '1px solid #ddd' },
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column'
-                }}>
+                <Grid item xs={12} sm={4} md={3} sx={{ borderRight: { sm: '1px solid #ddd' }, height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Paper elevation={0} sx={{ padding: 2 }}>
-                        <TextField
-                            fullWidth
-                            variant="outlined"
-                            label="Search Users"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                        <TextField fullWidth variant="outlined" label="Search Users" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </Paper>
                     <Divider />
                     {loading ? (
-                        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                            <CircularProgress />
-                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}><CircularProgress /></Box>
                     ) : (
                         <List sx={{ flexGrow: 1, overflow: 'auto' }}>
                             {users.map((user) => (
                                 <ListItem key={user.id} disablePadding>
-                                    <ListItemButton
-                                        selected={selectedUser?.id === user.id}
-                                        onClick={() => handleUserSelect(user)}
-                                    >
+                                    <ListItemButton selected={selectedUser?.id === user.id} onClick={() => handleUserSelect(user)}>
                                         <ListItemText primary={user.username} />
                                     </ListItemButton>
                                 </ListItem>
@@ -132,8 +115,6 @@ const ChatLayout = () => {
                         </List>
                     )}
                 </Grid>
-
-                {/* Chat Window Area */}
                 <Grid item xs={12} sm={8} md={9} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                     <Paper elevation={2} sx={{ padding: 2 }}>
                         <Typography variant="h6">

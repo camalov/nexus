@@ -9,7 +9,10 @@ import com.nexus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.nexus.mapper.MessageMapper;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +20,14 @@ public class MessageService {
 
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final MessageMapper messageMapper = MessageMapper.INSTANCE;
+
+    public List<ChatMessageDto> getMessageHistory(Long senderId, Long recipientId) {
+        List<Message> messages = messageRepository.findConversation(senderId, recipientId);
+        return messages.stream()
+                .map(messageMapper::messageToChatMessageDto)
+                .collect(Collectors.toList());
+    }
 
     public Message saveMessage(ChatMessageDto chatMessageDto) {
         User sender = userRepository.findByUsername(chatMessageDto.getSenderUsername())
