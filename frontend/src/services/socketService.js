@@ -11,6 +11,7 @@ class SocketService {
 
     connect(onConnectedCallback) {
         const user = authService.getCurrentUser();
+        // Yalnız qoşulma yoxdursa, yeni qoşulma yaradırıq
         if (user && user.token && !this.stompClient) {
             const socketFactory = () => new SockJS(`http://localhost:3000/ws`);
             this.stompClient = new Client({
@@ -42,6 +43,7 @@ class SocketService {
 
     subscribe(destination, callback) {
         if (this.stompClient && this.stompClient.connected) {
+            // Əgər bu ünvana artıq abunəlik varsa, ləğv edirik
             if (this.subscriptions.has(destination)) {
                 this.subscriptions.get(destination).unsubscribe();
             }
@@ -62,6 +64,6 @@ class SocketService {
     }
 }
 
-// Export a single instance of the service
+// Bütün tətbiqdə istifadə üçün tək bir nüsxə (instance) export edirik
 const socketService = new SocketService();
 export default socketService;

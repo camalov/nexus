@@ -1,3 +1,4 @@
+// frontend/src/components/MessageList.jsx
 import React from 'react';
 import { Box, Paper, Typography } from '@mui/material';
 
@@ -5,7 +6,7 @@ const MessageList = ({ messages, currentUser }) => {
     return (
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
             {messages.map((msg, index) => {
-                // FIX: Handle both optimistic and server messages
+                // Həm dərhal göstərilən, həm də serverdən gələn mesaj formatlarını nəzərə alırıq
                 const senderUsername = msg.sender ? msg.sender.username : msg.senderUsername;
                 const isSender = senderUsername === currentUser.username;
 
@@ -25,6 +26,7 @@ const MessageList = ({ messages, currentUser }) => {
                                 backgroundColor: isSender ? 'primary.main' : 'grey.300',
                                 color: isSender ? 'primary.contrastText' : 'text.primary',
                                 borderRadius: isSender ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
+                                maxWidth: '60%',
                             }}
                         >
                             <Typography variant="body1">{msg.content}</Typography>
