@@ -1,12 +1,42 @@
 // frontend/src/components/ChatLayout.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Divider } from '@mui/material';
+import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Divider, Badge, styled } from '@mui/material';
 import userService from '../services/userService';
 import messageService from '../services/messageService';
 import socketService from '../services/socketService';
 import authService from '../services/authService';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
+
+const StyledBadge = styled(Badge)(({ theme, isOnline }) => ({
+  '& .MuiBadge-badge': {
+    backgroundColor: isOnline ? '#44b700' : '#d3d3d3',
+    color: isOnline ? '#44b700' : '#d3d3d3',
+    boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+    '&::after': {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      borderRadius: '50%',
+      animation: isOnline ? 'ripple 1.2s infinite ease-in-out' : 'none',
+      border: '1px solid currentColor',
+      content: '""',
+    },
+  },
+  '@keyframes ripple': {
+    '0%': {
+      transform: 'scale(.8)',
+      opacity: 1,
+    },
+    '100%': {
+      transform: 'scale(2.4)',
+      opacity: 0,
+    },
+  },
+}));
+
 
 const ChatLayout = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +49,7 @@ const ChatLayout = () => {
     const [debounceTimeout, setDebounceTimeout] = useState(null);
     const currentUser = authService.getCurrentUser();
     const messagesEndRef = useRef(null);
+    const [isTyping, setIsTyping] = useState(false);
 
     // Connect to WebSocket on component mount
     useEffect(() => {
@@ -27,20 +58,48 @@ const ChatLayout = () => {
             socketService.subscribe(`/user/${currentUser.username}/queue/messages`, (newMessage) => {
                 setMessages((prevMessages) => [...prevMessages, newMessage]);
             });
+
+            // Status queue for typing and read receipts
+            socketService.subscribe(`/user/${currentUser.username}/queue/status`, (statusUpdate) => {
+                if ('isTyping' in statusUpdate) {
+                    if (selectedUser && statusUpdate.fromUsername === selectedUser.username) {
+                        setIsTyping(statusUpdate.isTyping);
+                    }
+                } else if ('messageId' in statusUpdate) { // This is a read receipt
+                    setMessages(prevMessages =>
+                        prevMessages.map(msg =>
+                            msg.id === statusUpdate.messageId ? { ...msg, status: statusUpdate.status } : msg
+                        )
+                    );
+                }
+            });
+
+            // Public presence topic
+            socketService.subscribe('/topic/presence', (presenceUpdate) => {
+                setContacts(prevContacts =>
+                    prevContacts.map(contact =>
+                        contact.username === presenceUpdate.username
+                            ? { ...contact, isOnline: presenceUpdate.isOnline }
+                            : contact
+                    )
+                );
+            });
         });
 
         // Disconnect on component unmount
         return () => {
             socketService.disconnect();
         };
-    }, [currentUser.username]);
+    }, [currentUser.username, selectedUser]);
 
     // New useEffect to fetch contacts on component mount
     useEffect(() => {
         const fetchContacts = async () => {
             try {
                 const response = await userService.getContacts();
-                setContacts(response.data);
+                // Initialize isOnline status to false
+                const contactsWithStatus = response.data.map(contact => ({ ...contact, isOnline: false }));
+                setContacts(contactsWithStatus);
             } catch (error) {
                 console.error('Failed to fetch contacts:', error);
             }
@@ -71,7 +130,7 @@ const ChatLayout = () => {
         return () => {
             if (debounceTimeout) clearTimeout(debounceTimeout);
         };
-    }, [searchQuery, currentUser.username]);
+    }, [searchQuery, currentUser.username, debounceTimeout]);
 
     // Fetch message history when a user is selected
     useEffect(() => {
@@ -94,6 +153,22 @@ const ChatLayout = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    // Add this new useEffect to mark messages as read
+    useEffect(() => {
+        const unreadMessages = messages.filter(
+            (msg) => msg.recipientUsername === currentUser.username && msg.status !== 'READ' && msg.id
+        );
+
+        if (unreadMessages.length > 0) {
+            unreadMessages.forEach((msg) => {
+                socketService.sendMessage('/app/chat.markAsRead', {
+                    messageId: msg.id,
+                    status: 'READ',
+                });
+            });
+        }
+    }, [messages, currentUser.username]);
+
     const handleUserSelect = (user) => {
         setSelectedUser(user);
     };
@@ -106,6 +181,14 @@ const ChatLayout = () => {
             type: 'TEXT'
         };
         socketService.sendMessage('/app/chat.send', message);
+    };
+
+    const handleTyping = (isTyping) => {
+        socketService.sendMessage('/app/chat.typing', {
+            fromUsername: currentUser.username,
+            toUsername: selectedUser.username,
+            isTyping: isTyping,
+        });
     };
 
     return (
@@ -123,7 +206,20 @@ const ChatLayout = () => {
                             {(searchQuery.trim() ? users : contacts).map((user) => (
                                 <ListItem key={user.id} disablePadding>
                                     <ListItemButton selected={selectedUser?.id === user.id} onClick={() => handleUserSelect(user)}>
-                                        <ListItemText primary={user.username} />
+                                        <ListItemText
+                                            primary={
+                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                    <StyledBadge
+                                                        overlap="circular"
+                                                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                                        variant="dot"
+                                                        isOnline={user.isOnline}
+                                                    >
+                                                       <span>{user.username}</span>
+                                                    </StyledBadge>
+                                                </Box>
+                                            }
+                                        />
                                     </ListItemButton>
                                 </ListItem>
                             ))}
@@ -135,10 +231,11 @@ const ChatLayout = () => {
                         <Typography variant="h6">
                             {selectedUser ? `Chat with ${selectedUser.username}` : 'Select a user to start chatting'}
                         </Typography>
+                        {isTyping && <Typography variant="caption" sx={{ fontStyle: 'italic' }}>typing...</Typography>}
                     </Paper>
                     <MessageList messages={messages} currentUser={currentUser} />
                     <div ref={messagesEndRef} />
-                    {selectedUser && <MessageInput onSendMessage={handleSendMessage} />}
+                    {selectedUser && <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} />}
                 </Grid>
             </Grid>
         </Box>

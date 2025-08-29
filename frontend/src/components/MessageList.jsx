@@ -1,7 +1,22 @@
 import React from 'react';
 import { Box, Paper, Typography } from '@mui/material';
+import CheckIcon from '@mui/icons-material/Check';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
 
 const MessageList = ({ messages, currentUser }) => {
+    const getStatusIcon = (msg) => {
+        if (msg.senderUsername !== currentUser.username) {
+            return null;
+        }
+        if (msg.status === 'READ') {
+            return <DoneAllIcon fontSize="small" sx={{ color: 'blue', ml: 0.5 }} />;
+        }
+        if (msg.status === 'SENT' || msg.status === 'DELIVERED') {
+            return <CheckIcon fontSize="small" sx={{ ml: 0.5 }} />;
+        }
+        return null;
+    };
+
     return (
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
             {messages.map((msg, index) => {
@@ -11,7 +26,7 @@ const MessageList = ({ messages, currentUser }) => {
 
                 return (
                     <Box
-                        key={index}
+                        key={msg.id || index}
                         sx={{
                             display: 'flex',
                             justifyContent: isSender ? 'flex-end' : 'flex-start',
@@ -27,7 +42,10 @@ const MessageList = ({ messages, currentUser }) => {
                                 borderRadius: isSender ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
                             }}
                         >
-                            <Typography variant="body1">{msg.content}</Typography>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Typography variant="body1">{msg.content}</Typography>
+                                {getStatusIcon(msg)}
+                            </Box>
                         </Paper>
                     </Box>
                 );
