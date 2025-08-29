@@ -12,8 +12,8 @@ class SocketService {
     connect(onConnectedCallback) {
         const user = authService.getCurrentUser();
         if (user && user.token && !this.stompClient) {
-            // Use a relative URL that will be handled by the Nginx proxy
-            const socketFactory = () => new SockJS('/ws');
+            // FIX: Use the full URL for the SockJS connection to ensure it works with the proxy
+            const socketFactory = () => new SockJS('http://localhost:3000/ws');
 
             this.stompClient = new Client({
                 webSocketFactory: socketFactory,
