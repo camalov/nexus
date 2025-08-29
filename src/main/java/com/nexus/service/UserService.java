@@ -9,7 +9,9 @@ import com.nexus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,9 +41,17 @@ public class UserService {
     }
 
     public List<UserSearchDto> getContacts(Long userId) {
-        List<Long> userIds = messageRepository.findDistinctConversationPartnerIds(userId);
-        return userRepository.findAllById(userIds)
-                .stream()
+        // Təkrarlanmanın qarşısını almaq üçün Set istifadə edirik
+        Set<User> contacts = new HashSet<>();
+
+        // İstifadəçinin mesaj göndərdiyi şəxsləri əlavə edirik
+        contacts.addAll(messageRepository.findRecipientsForSender(userId));
+
+        // İstifadəçiyə mesaj göndərən şəxsləri əlavə edirik
+        contacts.addAll(messageRepository.findSendersForRecipient(userId));
+
+        // Yekun siyahını DTO-ya çevirib qaytarırıq
+        return contacts.stream()
                 .map(user -> new UserSearchDto(user.getId(), user.getUsername()))
                 .collect(Collectors.toList());
     }
