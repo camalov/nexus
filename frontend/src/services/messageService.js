@@ -1,4 +1,3 @@
-// frontend/src/services/userService.js
 import axios from 'axios';
 import authService from './authService';
 
@@ -19,13 +18,12 @@ apiClient.interceptors.request.use(
     }
 );
 
-// FIX: Changed '?query=' to '?username=' to match the backend controller
-export const searchUsers = (query) => {
-    return apiClient.get(`/users/search?username=${query}`);
+export const getMessageHistory = (userId1, userId2) => {
+    return apiClient.get(`/messages/${userId1}/${userId2}`);
 };
 
-const userService = {
-    searchUsers,
+const messageService = {
+    getMessageHistory,
 };
 
-export default userService;
+export default messageService;
