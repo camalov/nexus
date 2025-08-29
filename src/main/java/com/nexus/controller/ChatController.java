@@ -1,5 +1,6 @@
 package com.nexus.controller;
 
+import com.nexus.mapper.MessageMapper;
 import com.nexus.model.dto.ChatMessageDto;
 import com.nexus.model.dto.MessageStatusUpdateDto;
 import com.nexus.model.dto.TypingStatusDto;
@@ -18,16 +19,27 @@ public class ChatController {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final MessageService messageService;
+    private final MessageMapper messageMapper;
 
     @MessageMapping("/chat.send")
     public void sendMessage(@Payload ChatMessageDto chatMessageDto) {
         Message savedMessage = messageService.saveMessage(chatMessageDto);
 
-        // Send to recipient's private queue
+        // Convert the saved message entity back to a DTO to ensure all fields are correct
+        ChatMessageDto messageToSend = messageMapper.messageToChatMessageDto(savedMessage);
+
+        // Send the message to the recipient
         messagingTemplate.convertAndSendToUser(
                 savedMessage.getRecipient().getUsername(),
                 "/queue/messages",
-                chatMessageDto
+                messageToSend
+        );
+
+        // Also send the message back to the sender for real-time UI update
+        messagingTemplate.convertAndSendToUser(
+                savedMessage.getSender().getUsername(),
+                "/queue/messages",
+                messageToSend
         );
     }
 

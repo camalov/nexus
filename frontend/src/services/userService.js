@@ -19,6 +19,10 @@ apiClient.interceptors.request.use(
     }
 );
 
+export const getContacts = () => {
+    return apiClient.get('/users/contacts');
+};
+
 // FIX: Changed '?query=' to '?username=' to match the backend controller
 export const searchUsers = (query) => {
     return apiClient.get(`/users/search?username=${query}`);
@@ -26,6 +30,7 @@ export const searchUsers = (query) => {
 
 const userService = {
     searchUsers,
+    getContacts,
 };
 
 export default userService;

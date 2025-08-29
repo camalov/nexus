@@ -4,6 +4,7 @@ import com.nexus.model.dto.UserDetailsDto;
 import com.nexus.model.dto.UserSearchDto;
 import com.nexus.model.entity.Role;
 import com.nexus.model.entity.User;
+import com.nexus.repository.MessageRepository;
 import com.nexus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final MessageRepository messageRepository;
 
     public List<UserSearchDto> searchUsers(String username) {
         return userRepository.findByUsernameContainingIgnoreCase(username)
@@ -34,6 +36,14 @@ public class UserService {
         return userRepository.findById(userId)
                 .map(this::mapToUserDetailsDto)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    public List<UserSearchDto> getContacts(Long userId) {
+        List<Long> userIds = messageRepository.findDistinctConversationPartnerIds(userId);
+        return userRepository.findAllById(userIds)
+                .stream()
+                .map(user -> new UserSearchDto(user.getId(), user.getUsername()))
+                .collect(Collectors.toList());
     }
 
     private UserDetailsDto mapToUserDetailsDto(User user) {

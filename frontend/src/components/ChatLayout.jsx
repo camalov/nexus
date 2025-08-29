@@ -10,6 +10,8 @@ import MessageInput from './MessageInput';
 
 const ChatLayout = () => {
     const [searchQuery, setSearchQuery] = useState('');
+    const [contacts, setContacts] = useState([]); // Use a separate state for contacts
+    // users state will now be for search results
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -33,7 +35,20 @@ const ChatLayout = () => {
         };
     }, [currentUser.username]);
 
-    // Debounced user search
+    // New useEffect to fetch contacts on component mount
+    useEffect(() => {
+        const fetchContacts = async () => {
+            try {
+                const response = await userService.getContacts();
+                setContacts(response.data);
+            } catch (error) {
+                console.error('Failed to fetch contacts:', error);
+            }
+        };
+        fetchContacts();
+    }, []);
+
+    // Modified user search useEffect
     useEffect(() => {
         if (debounceTimeout) clearTimeout(debounceTimeout);
         if (searchQuery.trim()) {
@@ -50,7 +65,7 @@ const ChatLayout = () => {
             }, 500);
             setDebounceTimeout(timeout);
         } else {
-            setUsers([]);
+            setUsers([]); // Clear search results when query is empty
         }
 
         return () => {
@@ -105,7 +120,7 @@ const ChatLayout = () => {
                         <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}><CircularProgress /></Box>
                     ) : (
                         <List sx={{ flexGrow: 1, overflow: 'auto' }}>
-                            {users.map((user) => (
+                            {(searchQuery.trim() ? users : contacts).map((user) => (
                                 <ListItem key={user.id} disablePadding>
                                     <ListItemButton selected={selectedUser?.id === user.id} onClick={() => handleUserSelect(user)}>
                                         <ListItemText primary={user.username} />
