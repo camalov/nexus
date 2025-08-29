@@ -1,14 +1,15 @@
+// frontend/src/components/MessageList.jsx
 import React from 'react';
 import { Box, Paper, Typography } from '@mui/material';
-import authService from '../services/authService';
 
-const MessageList = ({ messages }) => {
-    const currentUser = authService.getCurrentUser();
-
+const MessageList = ({ messages, currentUser }) => {
     return (
         <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
             {messages.map((msg, index) => {
-                const isSender = msg.sender.username === currentUser.username;
+                // Həm dərhal göstərilən, həm də serverdən gələn mesaj formatlarını nəzərə alırıq
+                const senderUsername = msg.sender ? msg.sender.username : msg.senderUsername;
+                const isSender = senderUsername === currentUser.username;
+
                 return (
                     <Box
                         key={index}
@@ -25,6 +26,7 @@ const MessageList = ({ messages }) => {
                                 backgroundColor: isSender ? 'primary.main' : 'grey.300',
                                 color: isSender ? 'primary.contrastText' : 'text.primary',
                                 borderRadius: isSender ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
+                                maxWidth: '60%',
                             }}
                         >
                             <Typography variant="body1">{msg.content}</Typography>

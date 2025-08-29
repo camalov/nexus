@@ -18,6 +18,7 @@ const ChatLayout = () => {
     const currentUser = authService.getCurrentUser();
     const messagesEndRef = useRef(null);
 
+    // Debounced user search
     useEffect(() => {
         if (debounceTimeout) {
             clearTimeout(debounceTimeout);
@@ -27,7 +28,6 @@ const ChatLayout = () => {
                 setLoading(true);
                 try {
                     const response = await userService.searchUsers(searchQuery);
-                    // Axtarış nəticələrindən hazırkı istifadəçini çıxarırıq
                     setUsers(response.data.filter(user => user.username !== currentUser.username));
                 } catch (error) {
                     console.error('Failed to search users:', error);
@@ -45,9 +45,9 @@ const ChatLayout = () => {
         };
     }, [searchQuery, currentUser.username]);
 
+    // Fetch messages and connect to WebSocket when a user is selected
     useEffect(() => {
         if (selectedUser) {
-            // Köhnə mesajları yükləyirik
             const fetchMessages = async () => {
                 try {
                     const response = await messageService.getMessageHistory(currentUser.id, selectedUser.id);
@@ -59,22 +59,20 @@ const ChatLayout = () => {
             };
             fetchMessages();
 
-            // WebSocket-ə qoşuluruq və yeni mesajları dinləyirik
             socketService.connect(currentUser.username, (message) => {
-                // Yalnız seçilmiş istifadəçidən gələn mesajları əlavə edirik
-                if (message.senderUsername === selectedUser.username) {
-                    setMessages((prevMessages) => [...prevMessages, message]);
+                // Only add the message if it's part of the current conversation
+                if (message.senderUsername === selectedUser.username || message.senderUsername === currentUser.username) {
+                   setMessages((prevMessages) => [...prevMessages, message]);
                 }
             });
 
-            // Komponentdən çıxanda WebSocket bağlantısını kəsirik
             return () => {
                 socketService.disconnect();
             };
         }
     }, [selectedUser, currentUser.id, currentUser.username]);
 
-    // Hər yeni mesaj gələndə avtomatik aşağı çəkirik
+    // Auto-scroll to the latest message
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
@@ -88,10 +86,10 @@ const ChatLayout = () => {
             senderUsername: currentUser.username,
             recipientUsername: selectedUser.username,
             content: content,
-            type: 'TEXT' // Mesajın tipini də göndəririk
+            type: 'TEXT',
         };
         socketService.sendMessage('/app/chat.send', message);
-        // Mesajı dərhal ekranda göstəririk
+        // Optimistically add the sent message to the UI
         setMessages((prevMessages) => [...prevMessages, message]);
     };
 
@@ -142,10 +140,8 @@ const ChatLayout = () => {
                             {selectedUser ? `Chat with ${selectedUser.username}` : 'Select a user to start chatting'}
                         </Typography>
                     </Paper>
-                    
                     <MessageList messages={messages} currentUser={currentUser} />
                     <div ref={messagesEndRef} />
-                    
                     {selectedUser && <MessageInput onSendMessage={handleSendMessage} />}
                 </Grid>
             </Grid>
