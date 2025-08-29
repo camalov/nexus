@@ -12,7 +12,9 @@ class SocketService {
     connect(onConnectedCallback) {
         const user = authService.getCurrentUser();
         if (user && user.token && !this.stompClient) {
-            const socketFactory = () => new SockJS(`http://localhost:3000/ws`);
+            // FIX: Use the full URL for the SockJS connection
+            const socketFactory = () => new SockJS('http://localhost:3000/ws');
+
             this.stompClient = new Client({
                 webSocketFactory: socketFactory,
                 connectHeaders: {
@@ -49,6 +51,8 @@ class SocketService {
                 callback(JSON.parse(message.body));
             });
             this.subscriptions.set(destination, subscription);
+        } else {
+            console.error("Cannot subscribe, STOMP client is not connected.");
         }
     }
 
@@ -58,10 +62,11 @@ class SocketService {
                 destination: destination,
                 body: JSON.stringify(body),
             });
+        } else {
+            console.error("Cannot send message, STOMP client is not connected.");
         }
     }
 }
 
-// Export a single instance of the service
 const socketService = new SocketService();
 export default socketService;
