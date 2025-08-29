@@ -20,11 +20,16 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final MessageRepository messageRepository;
+    private final WebSocketEventListener webSocketEventListener;
 
     public List<UserSearchDto> searchUsers(String username) {
+        Set<String> onlineUsernames = webSocketEventListener.getOnlineUsers();
         return userRepository.findByUsernameContainingIgnoreCase(username)
                 .stream()
-                .map(user -> new UserSearchDto(user.getId(), user.getUsername()))
+                .map(user -> {
+                    boolean isOnline = onlineUsernames.contains(user.getUsername());
+                    return new UserSearchDto(user.getId(), user.getUsername(), isOnline);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -52,7 +57,22 @@ public class UserService {
 
         // Yekun siyahını DTO-ya çevirib qaytarırıq
         return contacts.stream()
-                .map(user -> new UserSearchDto(user.getId(), user.getUsername()))
+                .map(user -> new UserSearchDto(user.getId(), user.getUsername(), false))
+                .collect(Collectors.toList());
+    }
+
+    public List<UserSearchDto> getContactsWithOnlineStatus(Long userId) {
+        Set<User> contacts = new HashSet<>();
+        contacts.addAll(messageRepository.findRecipientsForSender(userId));
+        contacts.addAll(messageRepository.findSendersForRecipient(userId));
+
+        Set<String> onlineUsernames = webSocketEventListener.getOnlineUsers();
+
+        return contacts.stream()
+                .map(user -> {
+                    boolean isOnline = onlineUsernames.contains(user.getUsername());
+                    return new UserSearchDto(user.getId(), user.getUsername(), isOnline);
+                })
                 .collect(Collectors.toList());
     }
 

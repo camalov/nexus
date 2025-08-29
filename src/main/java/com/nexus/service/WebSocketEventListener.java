@@ -21,7 +21,11 @@ public class WebSocketEventListener {
 
     private final SimpMessageSendingOperations messagingTemplate;
     // A simple in-memory set to store online users
-    private final Set<String> onlineUsers = new HashSet<>();
+    public static final Set<String> onlineUsers = new HashSet<>();
+
+    public Set<String> getOnlineUsers() {
+        return new HashSet<>(onlineUsers);
+    }
 
     @EventListener
     public void handleWebSocketConnectListener(SessionConnectedEvent event) {

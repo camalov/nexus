@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class UserSearchDto {
     private Long id;
     private String username;
+    private boolean isOnline;
 }

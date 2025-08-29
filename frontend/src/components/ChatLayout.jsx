@@ -1,6 +1,7 @@
 // frontend/src/components/ChatLayout.jsx
-import React, { useState, useEffect, useRef } from 'react';
-import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Divider, Badge, styled } from '@mui/material';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Divider, Badge, styled, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import userService from '../services/userService';
 import messageService from '../services/messageService';
 import socketService from '../services/socketService';
@@ -44,25 +45,56 @@ const ChatLayout = () => {
     // users state will now be for search results
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
+    const selectedUserRef = useRef(null);
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [debounceTimeout, setDebounceTimeout] = useState(null);
     const currentUser = authService.getCurrentUser();
     const messagesEndRef = useRef(null);
     const [isTyping, setIsTyping] = useState(false);
+    const [unreadCounts, setUnreadCounts] = useState({});
+
+    useEffect(() => {
+        selectedUserRef.current = selectedUser;
+    }, [selectedUser]);
+
+    const markMessagesAsRead = useCallback((contactUsername) => {
+        const unreadMessages = messages.filter(
+            (msg) => msg.senderUsername === contactUsername && msg.recipientUsername === currentUser.username && msg.status !== 'READ' && msg.id
+        );
+
+        if (unreadMessages.length > 0) {
+            unreadMessages.forEach((msg) => {
+                socketService.sendMessage('/app/chat.markAsRead', {
+                    messageId: msg.id,
+                    status: 'READ',
+                });
+            });
+        }
+    }, [messages, currentUser.username]);
 
     // Connect to WebSocket on component mount
     useEffect(() => {
         socketService.connect(() => {
             // Subscribe to personal message queue after connection
             socketService.subscribe(`/user/${currentUser.username}/queue/messages`, (newMessage) => {
-                setMessages((prevMessages) => [...prevMessages, newMessage]);
+                const currentSelectedUser = selectedUserRef.current;
+                if (currentSelectedUser && newMessage.senderUsername === currentSelectedUser.username) {
+                    setMessages((prevMessages) => [...prevMessages, newMessage]);
+                    markMessagesAsRead(newMessage.senderUsername);
+                } else {
+                    setUnreadCounts(prevCounts => ({
+                        ...prevCounts,
+                        [newMessage.senderUsername]: (prevCounts[newMessage.senderUsername] || 0) + 1
+                    }));
+                }
             });
 
             // Status queue for typing and read receipts
             socketService.subscribe(`/user/${currentUser.username}/queue/status`, (statusUpdate) => {
+                const currentSelectedUser = selectedUserRef.current;
                 if ('isTyping' in statusUpdate) {
-                    if (selectedUser && statusUpdate.fromUsername === selectedUser.username) {
+                    if (currentSelectedUser && statusUpdate.fromUsername === currentSelectedUser.username) {
                         setIsTyping(statusUpdate.isTyping);
                     }
                 } else if ('messageId' in statusUpdate) { // This is a read receipt
@@ -90,16 +122,14 @@ const ChatLayout = () => {
         return () => {
             socketService.disconnect();
         };
-    }, [currentUser.username, selectedUser]);
+    }, [currentUser.username, markMessagesAsRead]);
 
     // New useEffect to fetch contacts on component mount
     useEffect(() => {
         const fetchContacts = async () => {
             try {
                 const response = await userService.getContacts();
-                // Initialize isOnline status to false
-                const contactsWithStatus = response.data.map(contact => ({ ...contact, isOnline: false }));
-                setContacts(contactsWithStatus);
+                setContacts(response.data);
             } catch (error) {
                 console.error('Failed to fetch contacts:', error);
             }
@@ -139,38 +169,29 @@ const ChatLayout = () => {
                 try {
                     const response = await messageService.getMessageHistory(currentUser.id, selectedUser.id);
                     setMessages(response.data);
+                    markMessagesAsRead(selectedUser.username);
                 } catch (error) {
                     console.error('Failed to fetch message history:', error);
                     setMessages([]);
                 }
             };
             fetchMessages();
+        } else {
+            setMessages([]); // Clear messages when no user is selected
         }
-    }, [selectedUser, currentUser.id]);
+    }, [selectedUser, currentUser.id, markMessagesAsRead]);
 
     // Auto-scroll to the latest message
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // Add this new useEffect to mark messages as read
-    useEffect(() => {
-        const unreadMessages = messages.filter(
-            (msg) => msg.recipientUsername === currentUser.username && msg.status !== 'READ' && msg.id
-        );
-
-        if (unreadMessages.length > 0) {
-            unreadMessages.forEach((msg) => {
-                socketService.sendMessage('/app/chat.markAsRead', {
-                    messageId: msg.id,
-                    status: 'READ',
-                });
-            });
-        }
-    }, [messages, currentUser.username]);
-
     const handleUserSelect = (user) => {
         setSelectedUser(user);
+        setUnreadCounts(prevCounts => ({
+            ...prevCounts,
+            [user.username]: 0
+        }));
     };
 
     const handleSendMessage = (content) => {
@@ -181,9 +202,11 @@ const ChatLayout = () => {
             type: 'TEXT'
         };
         socketService.sendMessage('/app/chat.send', message);
+        setMessages((prevMessages) => [...prevMessages, { ...message, id: Date.now() }]);
     };
 
     const handleTyping = (isTyping) => {
+        if (!selectedUser) return;
         socketService.sendMessage('/app/chat.typing', {
             fromUsername: currentUser.username,
             toUsername: selectedUser.username,
@@ -208,15 +231,18 @@ const ChatLayout = () => {
                                     <ListItemButton selected={selectedUser?.id === user.id} onClick={() => handleUserSelect(user)}>
                                         <ListItemText
                                             primary={
-                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                    <StyledBadge
-                                                        overlap="circular"
-                                                        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                                                        variant="dot"
-                                                        isOnline={user.isOnline}
-                                                    >
-                                                       <span>{user.username}</span>
-                                                    </StyledBadge>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        <StyledBadge
+                                                            overlap="circular"
+                                                            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                                            variant="dot"
+                                                            isOnline={user.isOnline}
+                                                        >
+                                                           <span>{user.username}</span>
+                                                        </StyledBadge>
+                                                    </Box>
+                                                    <Badge badgeContent={unreadCounts[user.username] || 0} color="primary" />
                                                 </Box>
                                             }
                                         />
@@ -227,15 +253,30 @@ const ChatLayout = () => {
                     )}
                 </Grid>
                 <Grid item xs={12} sm={8} md={9} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <Paper elevation={2} sx={{ padding: 2 }}>
-                        <Typography variant="h6">
-                            {selectedUser ? `Chat with ${selectedUser.username}` : 'Select a user to start chatting'}
-                        </Typography>
-                        {isTyping && <Typography variant="caption" sx={{ fontStyle: 'italic' }}>typing...</Typography>}
-                    </Paper>
-                    <MessageList messages={messages} currentUser={currentUser} />
-                    <div ref={messagesEndRef} />
-                    {selectedUser && <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} />}
+                    {selectedUser ? (
+                        <>
+                            <Paper elevation={2} sx={{ padding: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Box>
+                                    <Typography variant="h6">
+                                        Chat with {selectedUser.username}
+                                    </Typography>
+                                    {isTyping && <Typography variant="caption" sx={{ fontStyle: 'italic' }}>typing...</Typography>}
+                                </Box>
+                                <IconButton onClick={() => setSelectedUser(null)}>
+                                    <CloseIcon />
+                                </IconButton>
+                            </Paper>
+                            <MessageList messages={messages} currentUser={currentUser} />
+                            <div ref={messagesEndRef} />
+                            <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} />
+                        </>
+                    ) : (
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                            <Typography variant="h6">
+                                Select a user to start chatting
+                            </Typography>
+                        </Box>
+                    )}
                 </Grid>
             </Grid>
         </Box>
