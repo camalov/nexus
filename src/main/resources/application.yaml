@@ -19,7 +19,3 @@ spring:
 
 file:
   upload-dir: ./uploads
-
-# JWT configuration for a static secret key
-jwt:
-  secret: U2VjcmV0S2V5Rm9yTmV4dXNQcm9qZWN0QmFzNjRUb0VuY29kZVRoaXNLZXk=
