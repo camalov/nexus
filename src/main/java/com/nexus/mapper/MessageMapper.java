@@ -11,7 +11,9 @@ public interface MessageMapper {
 
     MessageMapper INSTANCE = Mappers.getMapper(MessageMapper.class);
 
+    @Mapping(source = "id", target = "id") // Add this mapping
     @Mapping(source = "sender.username", target = "senderUsername")
     @Mapping(source = "recipient.username", target = "recipientUsername")
+    @Mapping(source = "status", target = "status") // Add this mapping
     ChatMessageDto messageToChatMessageDto(Message message);
 }
