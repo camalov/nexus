@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/changelog/changes/006-add-default-admin-user.yaml
   - include:
       file: db/changelog/changes/007-add-user-metadata-columns.yaml
+  - include:
+      file: db/changelog/changes/008-add-deleted-column-to-messages.yaml

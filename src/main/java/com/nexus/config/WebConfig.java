@@ -13,7 +13,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // Make sure to provide the absolute path with the "file:" prefix
+        String resourceLocation = "file:" + System.getProperty("user.dir") + "/" + uploadDir + "/";
         registry.addResourceHandler("/media/**")
-                .addResourceLocations("file:" + uploadDir + "/");
+                .addResourceLocations(resourceLocation);
     }
 }

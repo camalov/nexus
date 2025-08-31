@@ -6,6 +6,7 @@ import userService from '../services/userService';
 import messageService from '../services/messageService';
 import socketService from '../services/socketService';
 import authService from '../services/authService';
+import fileService from '../services/fileService';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 
@@ -24,6 +25,7 @@ const ChatLayout = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [loadingMessages, setLoadingMessages] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const [unreadCounts, setUnreadCounts] = useState({});
@@ -45,8 +47,6 @@ const ChatLayout = () => {
                 const currentChatUser = selectedUserRef.current;
 
                 if (newMessage.senderUsername === currentUser.username) {
-                    // This is the confirmation from the server for a message we sent.
-                    // Replace the temporary message with the real one from the server.
                     setMessages(prev => prev.map(msg => msg.id === newMessage.tempId ? newMessage : msg));
                 } else if (currentChatUser && newMessage.senderUsername === currentChatUser.username) {
                     setMessages(prev => [...prev, newMessage]);
@@ -61,8 +61,13 @@ const ChatLayout = () => {
 
             socketService.subscribe(`/user/${currentUser.username}/queue/status`, (statusUpdate) => {
                 const currentChatUser = selectedUserRef.current;
-                if (statusUpdate.hasOwnProperty('isTyping') && currentChatUser && statusUpdate.fromUsername === currentChatUser.username) {
-                    setIsTyping(statusUpdate.isTyping);
+                const typingUsername = statusUpdate.fromUsername || statusUpdate.senderUsername;
+
+                if (statusUpdate.hasOwnProperty('typing') || statusUpdate.hasOwnProperty('isTyping')) {
+                    const typingStatus = statusUpdate.hasOwnProperty('typing') ? statusUpdate.typing : statusUpdate.isTyping;
+                    if (currentChatUser && typingUsername === currentChatUser.username) {
+                        setIsTyping(typingStatus);
+                    }
                 } else if (statusUpdate.hasOwnProperty('messageId')) {
                     setMessages(prev => prev.map(msg => msg.id === statusUpdate.messageId ? { ...msg, status: statusUpdate.status } : msg));
                 }
@@ -109,17 +114,18 @@ const ChatLayout = () => {
     }, [searchQuery, currentUser.username, contacts]);
 
     const fetchMessages = useCallback(async (isInitialLoad = true) => {
-        if (!selectedUser || (loading && !isInitialLoad) || (!hasMoreMessages && !isInitialLoad)) return;
+        if (!selectedUser || (!hasMoreMessages && !isInitialLoad)) return;
 
         if (isInitialLoad) {
-            setLoading(true);
+            setLoadingMessages(true);
         } else {
+            if (loadingMore) return;
             setLoadingMore(true);
         }
         try {
             const currentPage = isInitialLoad ? 0 : page + 1;
             const response = await messageService.getMessageHistory(currentUser.id, selectedUser.id, currentPage);
-            const newMessages = response.data.content.reverse(); // reverse to show oldest first
+            const newMessages = response.data.content.reverse();
 
             if (isInitialLoad) {
                 setMessages(newMessages);
@@ -130,7 +136,6 @@ const ChatLayout = () => {
                     });
                 }
             } else {
-                // Prepend older messages to the list
                 setMessages(prev => [...newMessages, ...prev]);
             }
 
@@ -138,11 +143,11 @@ const ChatLayout = () => {
             setHasMoreMessages(!response.data.last);
         } catch (error) { console.error('Failed to fetch message history:', error); }
         if (isInitialLoad) {
-            setLoading(false);
+            setLoadingMessages(false);
         } else {
             setLoadingMore(false);
         }
-    }, [selectedUser, currentUser.id, loading, hasMoreMessages, page]);
+    }, [selectedUser, currentUser.id, hasMoreMessages, page, loadingMore]);
 
     useEffect(() => {
         if (selectedUser) {
@@ -150,12 +155,12 @@ const ChatLayout = () => {
             setMessages([]);
             setPage(0);
             setHasMoreMessages(true);
-            // Fetch initial messages for the selected user
             fetchMessages(true);
         } else {
             setMessages([]);
         }
-    }, [selectedUser, fetchMessages]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedUser]);
 
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' }); }, [messages]);
 
@@ -169,7 +174,7 @@ const ChatLayout = () => {
         if (!selectedUser) return;
         const tempId = `temp_${Date.now()}`;
         const message = {
-            tempId: tempId, // Send temporary ID to the server
+            tempId: tempId,
             senderUsername: currentUser.username,
             recipientUsername: selectedUser.username,
             content: content,
@@ -177,8 +182,53 @@ const ChatLayout = () => {
         };
         handleTyping(false);
         socketService.sendMessage('/app/chat.send', message);
-        // Optimistic update with a temporary message
         setMessages((prev) => [...prev, { ...message, id: tempId, status: 'SENT' }]);
+    };
+
+    const handleFileSelect = async (file) => {
+        if (!selectedUser) return;
+
+        try {
+            const response = await fileService.uploadFile(file);
+            const filePath = response.data.fileUrl;
+
+            if (!filePath) {
+                console.error("File URL not found in server response");
+                return;
+            }
+
+            const imageTypes = ['image/jpeg', 'image/png', 'image/gif'];
+            const messageType = imageTypes.includes(file.type) ? 'IMAGE' : 'FILE';
+
+            const tempId = `temp_${Date.now()}`;
+            const message = {
+                tempId: tempId,
+                senderUsername: currentUser.username,
+                recipientUsername: selectedUser.username,
+                content: filePath,
+                type: messageType,
+            };
+
+            socketService.sendMessage('/app/chat.send', message);
+            setMessages((prev) => [...prev, { ...message, id: tempId, status: 'SENT' }]);
+        } catch (error) {
+            console.error("Failed to upload file or send message:", error);
+        }
+    };
+
+    const handleDeleteMessage = async (messageId) => {
+        try {
+            await messageService.softDeleteMessage(messageId);
+            setMessages(prevMessages =>
+                prevMessages.map(msg =>
+                    msg.id === messageId
+                        ? { ...msg, deleted: true }
+                        : msg
+                )
+            );
+        } catch (error) {
+            console.error('Failed to delete message:', error);
+        }
     };
 
     const handleTyping = (typingStatus) => {
@@ -191,7 +241,7 @@ const ChatLayout = () => {
     };
 
     const handleScroll = () => {
-        if (messageContainerRef.current && messageContainerRef.current.scrollTop === 0 && hasMoreMessages && !loading) {
+        if (messageContainerRef.current && messageContainerRef.current.scrollTop === 0 && hasMoreMessages && !loadingMore) {
             fetchMessages(false);
         }
     };
@@ -233,19 +283,30 @@ const ChatLayout = () => {
                             <Paper elevation={2} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Box>
                                     <Typography variant="h6">{`Chat with ${selectedUser.username}`}</Typography>
-                                    {isTyping && <Typography variant="caption" sx={{ fontStyle: 'italic' }}>typing...</Typography>}
+                                    {isTyping && <Typography variant="caption" sx={{ fontStyle: 'italic' }}>yazır...</Typography>}
                                 </Box>
                                 <IconButton onClick={() => setSelectedUser(null)}><CloseIcon /></IconButton>
                             </Paper>
-                            <MessageList
-                                messages={messages}
-                                currentUser={currentUser}
-                                onScroll={handleScroll}
-                                messageContainerRef={messageContainerRef}
-                                loadingMore={loadingMore}
+                            {loadingMessages ? (
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                                    <CircularProgress />
+                                </Box>
+                            ) : (
+                                <MessageList
+                                    messages={messages}
+                                    currentUser={currentUser}
+                                    onScroll={handleScroll}
+                                    messageContainerRef={messageContainerRef}
+                                    loadingMore={loadingMore}
+                                    messagesEndRef={messagesEndRef}
+                                    onDeleteMessage={handleDeleteMessage}
+                                />
+                            )}
+                            <MessageInput
+                                onSendMessage={handleSendMessage}
+                                onTyping={handleTyping}
+                                onFileSelect={handleFileSelect}
                             />
-                            <div ref={messagesEndRef} />
-                            <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} />
                         </>
                     ) : (
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>

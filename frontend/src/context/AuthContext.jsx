@@ -16,12 +16,11 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (username, password) => {
-        const response = await authService.login(username, password);
-        if (response.data.token) {
-            localStorage.setItem('user', JSON.stringify(response.data));
-            setUser(response.data);
-        }
-        return response;
+        // authService.login handles the API call and saving to localStorage.
+        // It returns the user data object on success.
+        const userData = await authService.login(username, password);
+        // Update the context's state with the user data.
+        setUser(userData);
     };
 
     const logout = () => {

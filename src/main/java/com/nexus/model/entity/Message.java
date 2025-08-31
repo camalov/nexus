@@ -38,4 +38,7 @@ public class Message {
 
     @Column(nullable = true)
     private LocalDateTime expiresAt;
+
+    @Column(columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean deleted = false;
 }

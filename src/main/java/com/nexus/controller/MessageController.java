@@ -29,4 +29,10 @@ public class MessageController {
         Page<ChatMessageDto> messages = messageService.getMessageHistory(senderId, recipientId, pageable);
         return ResponseEntity.ok(messages);
     }
+
+    @DeleteMapping("/{messageId}")
+    public ResponseEntity<Void> deleteMessage(@PathVariable Long messageId) {
+        messageService.softDeleteMessage(messageId);
+        return ResponseEntity.ok().build();
+    }
 }

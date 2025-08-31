@@ -1,5 +1,6 @@
 package com.nexus.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -10,5 +11,6 @@ import lombok.NoArgsConstructor;
 public class TypingStatusDto {
     private String fromUsername;
     private String toUsername;
+    @JsonProperty("isTyping")
     private boolean isTyping;
 }

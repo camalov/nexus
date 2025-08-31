@@ -42,4 +42,12 @@ public class FileStorageService {
 
         return uniqueFilename;
     }
+
+    public void delete(String filename) throws IOException {
+        if (filename == null || filename.isEmpty()) {
+            return; // Do nothing if filename is invalid
+        }
+        Path file = root.resolve(filename);
+        Files.deleteIfExists(file);
+    }
 }

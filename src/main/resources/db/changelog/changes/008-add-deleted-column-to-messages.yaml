@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 8
+      author: Gemini
+      changes:
+        - addColumn:
+            tableName: messages
+            columns:
+              - column:
+                  name: deleted
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

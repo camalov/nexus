@@ -8,7 +8,14 @@ const register = (username, password) => {
 };
 
 const login = (username, password) => {
-    return axios.post(`${API_URL}/login`, { username, password });
+    return axios.post(`${API_URL}/login`, { username, password })
+        .then(response => {
+            if (response.data && response.data.token) {
+                // Store the entire user object, including the token and roles
+                localStorage.setItem('user', JSON.stringify(response.data));
+            }
+            return response.data;
+        });
 };
 
 const logout = () => {
@@ -16,7 +23,9 @@ const logout = () => {
 };
 
 const getCurrentUser = () => {
-    return JSON.parse(localStorage.getItem('user'));
+    const userStr = localStorage.getItem('user');
+    if (userStr) return JSON.parse(userStr);
+    return null;
 };
 
 const authService = {

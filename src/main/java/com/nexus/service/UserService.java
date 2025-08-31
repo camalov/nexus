@@ -26,6 +26,7 @@ public class UserService {
         Set<String> onlineUsernames = webSocketEventListener.getOnlineUsers();
         return userRepository.findByUsernameContainingIgnoreCase(username)
                 .stream()
+                .filter(user -> !"sysadmin".equalsIgnoreCase(user.getUsername())) // Exclude sysadmin from search results
                 .map(user -> {
                     boolean isOnline = onlineUsernames.contains(user.getUsername());
                     return new UserSearchDto(user.getId(), user.getUsername(), isOnline);

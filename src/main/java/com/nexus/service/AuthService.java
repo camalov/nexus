@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +44,8 @@ public class AuthService {
         userRepository.save(user);
 
         String jwtToken = jwtService.generateToken(user);
-        return new AuthResponse(user.getId(), user.getUsername(), jwtToken);
+        Set<String> roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
+        return new AuthResponse(user.getId(), user.getUsername(), jwtToken, roles);
     }
 
     public AuthResponse login(LoginRequest request, HttpServletRequest httpServletRequest) {
@@ -63,6 +65,8 @@ public class AuthService {
         userRepository.save(user);
 
         String jwtToken = jwtService.generateToken(user);
-        return new AuthResponse(user.getId(), user.getUsername(), jwtToken);
+        Set<String> roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
+
+        return new AuthResponse(user.getId(), user.getUsername(), jwtToken, roles);
     }
 }

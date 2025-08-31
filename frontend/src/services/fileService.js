@@ -18,17 +18,19 @@ apiClient.interceptors.request.use(
     }
 );
 
-export const getMessageHistory = (userId1, userId2, page = 0, size = 50) => {
-    return apiClient.get(`/messages/${userId1}/${userId2}?page=${page}&size=${size}`);
+const uploadFile = (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return apiClient.post('/files/upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
 };
 
-export const softDeleteMessage = (messageId) => {
-    return apiClient.delete(`/messages/${messageId}`);
+const fileService = {
+    uploadFile,
 };
 
-const messageService = {
-    getMessageHistory,
-    softDeleteMessage,
-};
-
-export default messageService;
+export default fileService;
