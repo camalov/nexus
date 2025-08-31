@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Badge, Avatar, IconButton, useMediaQuery, useTheme, InputAdornment } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -110,37 +110,58 @@ const ChatLayout = () => {
         return () => clearTimeout(debouncedSearch);
     }, [searchQuery, currentUser.username, contacts]);
 
-    const fetchMessages = useCallback(async (isInitialLoad = true) => {
-        if (!selectedUser || (!hasMoreMessages && !isInitialLoad)) return;
-        const loadStateSetter = isInitialLoad ? setLoadingMessages : setLoadingMore;
-        if (!isInitialLoad && loadingMore) return;
-        loadStateSetter(true);
-        try {
-            const currentPage = isInitialLoad ? 0 : page + 1;
-            const response = await messageService.getMessageHistory(currentUser.id, selectedUser.id, currentPage);
-            const newMessages = response.data.content.reverse();
-            setMessages(prev => isInitialLoad ? newMessages : [...newMessages, ...prev]);
-            if (isInitialLoad) {
+    // This useEffect hook now handles the INITIAL loading of messages for a selected user.
+    // Its dependency array is stable, which prevents the infinite loop.
+    useEffect(() => {
+        if (!selectedUser) {
+            setMessages([]);
+            return;
+        }
+
+        const fetchInitialMessages = async () => {
+            setLoadingMessages(true);
+            setMessages([]); // Reset messages
+            setPage(0); // Reset page
+            setHasMoreMessages(true); // Reset pagination
+
+            try {
+                const response = await messageService.getMessageHistory(currentUser.id, selectedUser.id, 0);
+                const newMessages = response.data.content.reverse();
+                setMessages(newMessages);
+                setHasMoreMessages(!response.data.last);
+
+                // Mark unread messages as read
                 const unread = newMessages.filter(m => m.recipientUsername === currentUser.username && m.status !== 'READ');
                 unread.forEach(msg => socketService.sendMessage('/app/chat.markAsRead', { messageId: msg.id, status: 'READ' }));
-            }
-            setPage(currentPage);
-            setHasMoreMessages(!response.data.last);
-        } catch (error) { console.error('Failed to fetch message history:', error); }
-        loadStateSetter(false);
-    }, [selectedUser, currentUser.id, hasMoreMessages, page, loadingMore]);
 
-    useEffect(() => {
-        if (selectedUser) {
-            setIsTyping(false);
-            setMessages([]);
-            setPage(0);
-            setHasMoreMessages(true);
-            fetchMessages(true);
-        } else {
-            setMessages([]);
+            } catch (error) {
+                console.error('Failed to fetch message history:', error);
+            } finally {
+                setLoadingMessages(false);
+            }
+        };
+
+        fetchInitialMessages();
+    }, [selectedUser, currentUser.id]); // Dependency array is now stable
+
+    // We keep the old fetchMessages function, but simplified, for loading MORE messages on scroll.
+    const fetchMoreMessages = async () => {
+        if (!selectedUser || !hasMoreMessages || loadingMore) return;
+
+        setLoadingMore(true);
+        const nextPage = page + 1;
+        try {
+            const response = await messageService.getMessageHistory(currentUser.id, selectedUser.id, nextPage);
+            const newMessages = response.data.content.reverse();
+            setMessages(prev => [...newMessages, ...prev]);
+            setPage(nextPage);
+            setHasMoreMessages(!response.data.last);
+        } catch (error) {
+            console.error('Failed to fetch more messages:', error);
+        } finally {
+            setLoadingMore(false);
         }
-    }, [selectedUser, fetchMessages]);
+    };
 
     const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id || messages[messages.length - 1].tempId : null;
 
@@ -192,8 +213,8 @@ const ChatLayout = () => {
     };
 
     const handleScroll = () => {
-        if (messageContainerRef.current?.scrollTop === 0 && hasMoreMessages && !loadingMore) {
-            fetchMessages(false);
+        if (messageContainerRef.current?.scrollTop === 0) {
+            fetchMoreMessages();
         }
     };
 
