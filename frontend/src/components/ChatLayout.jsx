@@ -24,15 +24,11 @@ const ChatLayout = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [loadingMore, setLoadingMore] = useState(false);
     const [isTyping, setIsTyping] = useState(false);
     const [unreadCounts, setUnreadCounts] = useState({});
-    const [page, setPage] = useState(0);
-    const [hasMoreMessages, setHasMoreMessages] = useState(true);
 
     const currentUser = authService.getCurrentUser();
     const messagesEndRef = useRef(null);
-    const messageContainerRef = useRef(null);
     const selectedUserRef = useRef(null);
 
     useEffect(() => {
@@ -108,56 +104,28 @@ const ChatLayout = () => {
         return () => clearTimeout(debouncedSearch);
     }, [searchQuery, currentUser.username, contacts]);
 
-    const fetchMessages = useCallback(async (isInitialLoad = true) => {
-        if (!selectedUser || (loading && !isInitialLoad) || (!hasMoreMessages && !isInitialLoad)) return;
-
-        if (isInitialLoad) {
-            setLoading(true);
-        } else {
-            setLoadingMore(true);
-        }
-        try {
-            const currentPage = isInitialLoad ? 0 : page + 1;
-            const response = await messageService.getMessageHistory(currentUser.id, selectedUser.id, currentPage);
-            const newMessages = response.data.content.reverse(); // reverse to show oldest first
-
-            if (isInitialLoad) {
-                setMessages(newMessages);
-                const unread = newMessages.filter(m => m.recipientUsername === currentUser.username && m.status !== 'READ');
-                if (unread.length > 0) {
-                    unread.forEach(msg => {
-                        socketService.sendMessage('/app/chat.markAsRead', { messageId: msg.id, status: 'READ' });
-                    });
-                }
-            } else {
-                // Prepend older messages to the list
-                setMessages(prev => [...newMessages, ...prev]);
-            }
-
-            setPage(currentPage);
-            setHasMoreMessages(!response.data.last);
-        } catch (error) { console.error('Failed to fetch message history:', error); }
-        if (isInitialLoad) {
-            setLoading(false);
-        } else {
-            setLoadingMore(false);
-        }
-    }, [selectedUser, currentUser.id, loading, hasMoreMessages, page]);
-
     useEffect(() => {
         if (selectedUser) {
             setIsTyping(false);
-            setMessages([]);
-            setPage(0);
-            setHasMoreMessages(true);
-            // Fetch initial messages for the selected user
-            fetchMessages(true);
+            const fetchMessages = async () => {
+                try {
+                    const response = await messageService.getMessageHistory(currentUser.id, selectedUser.id);
+                    setMessages(response.data);
+                    const unread = response.data.filter(m => m.recipientUsername === currentUser.username && m.status !== 'READ');
+                    if (unread.length > 0) {
+                        unread.forEach(msg => {
+                            socketService.sendMessage('/app/chat.markAsRead', { messageId: msg.id, status: 'READ' });
+                        });
+                    }
+                } catch (error) { console.error('Failed to fetch message history:', error); }
+            };
+            fetchMessages();
         } else {
             setMessages([]);
         }
-    }, [selectedUser, fetchMessages]);
+    }, [selectedUser, currentUser.id]);
 
-    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' }); }, [messages]);
+    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
     const handleUserSelect = (user) => {
         if (selectedUser?.id === user.id) return;
@@ -181,20 +149,12 @@ const ChatLayout = () => {
         setMessages((prev) => [...prev, { ...message, id: tempId, status: 'SENT' }]);
     };
 
-    const handleTyping = (typingStatus) => {
+    const handleTyping = useCallback((typingStatus) => {
         if (!selectedUser) return;
         socketService.sendMessage('/app/chat.typing', {
-            fromUsername: currentUser.username,
-            toUsername: selectedUser.username,
-            isTyping: typingStatus,
+            fromUsername: currentUser.username, toUsername: selectedUser.username, isTyping: typingStatus,
         });
-    };
-
-    const handleScroll = () => {
-        if (messageContainerRef.current && messageContainerRef.current.scrollTop === 0 && hasMoreMessages && !loading) {
-            fetchMessages(false);
-        }
-    };
+    }, [currentUser.username, selectedUser]);
 
     const displayedList = searchQuery.trim() ? searchResults : contacts;
 
@@ -237,13 +197,7 @@ const ChatLayout = () => {
                                 </Box>
                                 <IconButton onClick={() => setSelectedUser(null)}><CloseIcon /></IconButton>
                             </Paper>
-                            <MessageList
-                                messages={messages}
-                                currentUser={currentUser}
-                                onScroll={handleScroll}
-                                messageContainerRef={messageContainerRef}
-                                loadingMore={loadingMore}
-                            />
+                            <MessageList messages={messages} currentUser={currentUser} />
                             <div ref={messagesEndRef} />
                             <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} />
                         </>

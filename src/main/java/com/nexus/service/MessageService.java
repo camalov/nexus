@@ -7,8 +7,6 @@ import com.nexus.model.entity.User;
 import com.nexus.repository.MessageRepository;
 import com.nexus.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.nexus.mapper.MessageMapper;
@@ -24,9 +22,11 @@ public class MessageService {
     private final UserRepository userRepository;
     private final MessageMapper messageMapper = MessageMapper.INSTANCE;
 
-    public Page<ChatMessageDto> getMessageHistory(Long senderId, Long recipientId, Pageable pageable) {
-        Page<Message> messages = messageRepository.findConversation(senderId, recipientId, pageable);
-        return messages.map(messageMapper::messageToChatMessageDto);
+    public List<ChatMessageDto> getMessageHistory(Long senderId, Long recipientId) {
+        List<Message> messages = messageRepository.findConversation(senderId, recipientId);
+        return messages.stream()
+                .map(messageMapper::messageToChatMessageDto)
+                .collect(Collectors.toList());
     }
 
     public Message saveMessage(ChatMessageDto chatMessageDto) {

@@ -18,8 +18,8 @@ apiClient.interceptors.request.use(
     }
 );
 
-export const getMessageHistory = (userId1, userId2, page = 0, size = 50) => {
-    return apiClient.get(`/messages/${userId1}/${userId2}?page=${page}&size=${size}`);
+export const getMessageHistory = (userId1, userId2) => {
+    return apiClient.get(`/messages/${userId1}/${userId2}`);
 };
 
 const messageService = {
