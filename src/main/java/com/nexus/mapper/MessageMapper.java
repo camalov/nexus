@@ -11,10 +11,11 @@ public interface MessageMapper {
 
     MessageMapper INSTANCE = Mappers.getMapper(MessageMapper.class);
 
-    @Mapping(source = "id", target = "id") // Add this mapping
+    @Mapping(source = "id", target = "id")
     @Mapping(source = "sender.username", target = "senderUsername")
     @Mapping(source = "recipient.username", target = "recipientUsername")
-    @Mapping(source = "status", target = "status") // Add this mapping
+    @Mapping(source = "status", target = "status")
     @Mapping(target = "tempId", ignore = true)
+    @Mapping(target = "ephemeral", ignore = true)
     ChatMessageDto messageToChatMessageDto(Message message);
 }
