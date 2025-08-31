@@ -1,32 +1,33 @@
 import React from 'react';
-import { Box, Paper, Typography, CircularProgress, Link, IconButton } from '@mui/material';
+import { Box, Typography, Link, IconButton } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const MessageList = ({ messages, currentUser, onScroll, messageContainerRef, loadingMore, messagesEndRef, onDeleteMessage }) => {
+const MessageList = ({ messages, currentUser, onDeleteMessage, messagesEndRef }) => {
+
     const getStatusIcon = (msg) => {
         if (msg.senderUsername !== currentUser.username || msg.deleted) {
             return null;
         }
-        if (msg.status === 'READ') {
-            return <DoneAllIcon fontSize="small" sx={{ color: 'blue', ml: 0.5 }} />;
+        const iconProps = { fontSize: 'small', sx: { ml: 0.5 } };
+        switch (msg.status) {
+            case 'READ':
+                return <DoneAllIcon {...iconProps} sx={{ ...iconProps.sx, color: '#4FC3F7' }} />;
+            case 'DELIVERED':
+                return <DoneAllIcon {...iconProps} sx={{ ...iconProps.sx, color: '#a0a0a0' }} />;
+            case 'SENT':
+                return <CheckIcon {...iconProps} sx={{ ...iconProps.sx, color: '#a0a0a0' }} />;
+            default:
+                // For temp messages that haven't been confirmed by the server yet
+                return <CheckIcon {...iconProps} sx={{ ...iconProps.sx, color: '#a0a0a0' }} />;
         }
-        if (msg.status === 'SENT' || msg.status === 'DELIVERED') {
-            return <CheckIcon fontSize="small" sx={{ ml: 0.5 }} />;
-        }
-        return null;
     };
 
     const renderMessageContent = (msg) => {
-        if (!msg || !msg.content) {
-            return null; // Safeguard for empty content
-        }
-
-        // If message is soft-deleted, show the appropriate text.
         if (msg.deleted) {
-            return <Typography variant="body1" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>[media deleted]</Typography>;
+            return <Typography variant="body1" sx={{ fontStyle: 'italic', color: '#a0a0a0' }}>Message deleted</Typography>;
         }
 
         const baseUrl = window.location.origin.replace(':3000', ':8080') + '/nexus/api';
@@ -35,65 +36,63 @@ const MessageList = ({ messages, currentUser, onScroll, messageContainerRef, loa
         switch (msg.type) {
             case 'IMAGE':
                 return (
-                    <img
-                        src={fullPath}
-                        alt="Image content"
-                        style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }}
-                    />
+                    <Box sx={{ p: 0.5, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+                         <img src={fullPath} alt="Image content" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '6px', display: 'block' }} />
+                    </Box>
                 );
             case 'FILE':
                 const fileName = msg.content.split('/').pop();
                 return (
-                    <Link href={fullPath} download target="_blank" rel="noopener noreferrer" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
-                        <InsertDriveFileIcon sx={{ mr: 1 }} />
+                    <Link href={fullPath} download target="_blank" rel="noopener noreferrer" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#fff' }}>
+                        <InsertDriveFileIcon sx={{ mr: 1, color: '#a0a0a0' }} />
                         <Typography variant="body1">{fileName}</Typography>
                     </Link>
                 );
             case 'TEXT':
             default:
-                return <Typography variant="body1">{msg.content}</Typography>;
+                return <Typography variant="body1" sx={{ color: '#fff' }}>{msg.content}</Typography>;
         }
     };
 
     return (
-        <Box ref={messageContainerRef} onScroll={onScroll} sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
-            {loadingMore && <CircularProgress sx={{ display: 'block', margin: '10px auto' }} />}
+        <Box sx={{ px: 2, py: 1 }}>
             {messages.map((msg) => {
                 const senderUsername = msg.sender ? msg.sender.username : msg.senderUsername;
                 const isSender = senderUsername === currentUser.username;
-                const isMedia = msg.type === 'IMAGE' || msg.type === 'FILE';
 
                 return (
                     <Box
-                        key={msg.id}
+                        key={msg.id || msg.tempId}
                         sx={{
                             display: 'flex',
                             justifyContent: isSender ? 'flex-end' : 'flex-start',
-                            mb: 2,
+                            mb: 1.5,
                         }}
                     >
-                        <Paper
-                            variant="outlined"
+                        <Box
                             sx={{
+                                bgcolor: isSender ? '#2b5278' : '#262d31',
+                                color: '#fff',
                                 p: 1.5,
-                                backgroundColor: isSender ? 'primary.main' : 'grey.300',
-                                color: isSender ? 'primary.contrastText' : 'text.primary',
-                                borderRadius: isSender ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
-                                maxWidth: '70%',
-                                display: 'flex',
-                                alignItems: 'center',
+                                borderRadius: '20px',
+                                maxWidth: { xs: '80%', sm: '70%', md: '60%' },
+                                wordWrap: 'break-word',
+                                position: 'relative',
                             }}
                         >
-                            <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
-                                {renderMessageContent(msg)}
+                            {renderMessageContent(msg)}
+                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', mt: 0.5 }}>
+                                <Typography variant="caption" sx={{ color: '#a0a0a0', mr: 0.5 }}>
+                                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </Typography>
                                 {isSender && getStatusIcon(msg)}
                             </Box>
-                            {isSender && isMedia && !msg.deleted && (
-                                <IconButton size="small" onClick={() => onDeleteMessage(msg.id)} sx={{ ml: 1, color: 'inherit', opacity: 0.7 }}>
+                             {isSender && !msg.deleted && (
+                                <IconButton size="small" onClick={() => onDeleteMessage(msg.id)} sx={{ position: 'absolute', top: -5, right: -5, color: '#a0a0a0', backgroundColor: '#17212b', '&:hover': { backgroundColor: '#2a3b4d'} }}>
                                     <DeleteIcon fontSize="small" />
                                 </IconButton>
                             )}
-                        </Paper>
+                        </Box>
                     </Box>
                 );
             })}
