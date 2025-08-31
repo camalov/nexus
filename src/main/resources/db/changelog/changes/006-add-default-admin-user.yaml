@@ -11,7 +11,7 @@ databaseChangeLog:
                   value: "sysadmin"
               - column:
                   name: password
-                  value: "$2a$10$5/c.832g.d61s2.G/h4E9.B0x4b7i8N2a9/j1b3k.d5l.e6m7n8o"
+                  value: "$2a$10$c33c3wMGoaGpRPBjWQ74wuAw0oWEu4go6r9rL6.mGlXP74FRJcmkm"
         - insert:
             tableName: user_roles
             columns:
