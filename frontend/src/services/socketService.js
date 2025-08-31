@@ -12,8 +12,7 @@ class SocketService {
     connect(onConnectedCallback) {
         const user = authService.getCurrentUser();
         if (user && user.token && !this.stompClient) {
-            // FIX: Use the full URL for the SockJS connection to ensure it works with the proxy
-            const socketFactory = () => new SockJS('http://localhost:3000/ws');
+            const socketFactory = () => new SockJS('http://localhost:3000/nexus/api/ws');
 
             this.stompClient = new Client({
                 webSocketFactory: socketFactory,
