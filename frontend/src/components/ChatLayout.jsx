@@ -51,7 +51,8 @@ const ChatLayout = () => {
             socketService.subscribe(`/user/${currentUser.username}/queue/messages`, (newMessage) => {
                 const currentChatUser = selectedUserRef.current;
                 if (newMessage.senderUsername === currentUser.username) {
-                    setMessages(prev => prev.map(msg => msg.id === newMessage.tempId ? newMessage : msg));
+                    // If the current user sent the message, find the temporary message by its tempId and replace it with the real one from the server.
+                    setMessages(prev => prev.map(msg => (msg.tempId && msg.tempId === newMessage.tempId) ? newMessage : msg));
                 } else if (currentChatUser && newMessage.senderUsername === currentChatUser.username) {
                     setMessages(prev => [...prev, newMessage]);
                     socketService.sendMessage('/app/chat.markAsRead', { messageId: newMessage.id, status: 'READ' });
