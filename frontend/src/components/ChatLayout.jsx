@@ -49,15 +49,31 @@ const ChatLayout = () => {
     useEffect(() => {
         socketService.connect(() => {
             socketService.subscribe(`/user/${currentUser.username}/queue/messages`, (newMessage) => {
+                setMessages(prev => {
+                    const messages = [...prev];
+                    // Find if the message already exists (by real ID or temp ID)
+                    const existingMsgIndex = messages.findIndex(msg =>
+                        (msg.id && msg.id === newMessage.id) ||
+                        (msg.tempId && msg.tempId === newMessage.tempId)
+                    );
+
+                    if (existingMsgIndex > -1) {
+                        // If it exists, replace it (handles temp->real update and delete update)
+                        messages[existingMsgIndex] = newMessage;
+                        return messages;
+                    } else {
+                        // If it's a new message from another user, add it
+                        if (newMessage.senderUsername !== currentUser.username) {
+                            return [...messages, newMessage];
+                        }
+                    }
+                    return messages; // Return original if it's a duplicate new message from self
+                });
+
+                // Mark as read if it's from the other user in the current chat
                 const currentChatUser = selectedUserRef.current;
-                if (newMessage.senderUsername === currentUser.username) {
-                    // If the current user sent the message, find the temporary message by its tempId and replace it with the real one from the server.
-                    setMessages(prev => prev.map(msg => (msg.tempId && msg.tempId === newMessage.tempId) ? newMessage : msg));
-                } else if (currentChatUser && newMessage.senderUsername === currentChatUser.username) {
-                    setMessages(prev => [...prev, newMessage]);
+                if (currentChatUser && newMessage.senderUsername === currentChatUser.username) {
                     socketService.sendMessage('/app/chat.markAsRead', { messageId: newMessage.id, status: 'READ' });
-                } else {
-                    setUnreadCounts(prev => ({ ...prev, [newMessage.senderUsername]: (prev[newMessage.senderUsername] || 0) + 1 }));
                 }
             });
             socketService.subscribe(`/user/${currentUser.username}/queue/status`, (statusUpdate) => {
@@ -72,6 +88,9 @@ const ChatLayout = () => {
                 const updateUserStatus = (userList) => userList.map(u => u.username === presenceUpdate.username ? { ...u, isOnline: presenceUpdate.isOnline } : u);
                 setContacts(prev => updateUserStatus(prev));
                 setSearchResults(prev => updateUserStatus(prev));
+                if (selectedUserRef.current && selectedUserRef.current.username === presenceUpdate.username) {
+                    setSelectedUser(prev => ({ ...prev, isOnline: presenceUpdate.isOnline }));
+                }
             });
         });
         return () => socketService.disconnect();

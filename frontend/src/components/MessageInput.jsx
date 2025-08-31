@@ -15,20 +15,25 @@ const MessageInput = ({ onSendMessage, onTyping, onFileSelect }) => {
         const value = e.target.value;
         setMessage(value);
 
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
         if (value && !isTypingRef.current) {
             isTypingRef.current = true;
             onTyping(true);
         }
 
-        if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
+        if (!value && isTypingRef.current) {
+            stopTyping(); // Immediately send stop typing signal if input is empty
+            return;
         }
 
         if (value) {
             typingTimeoutRef.current = setTimeout(() => {
                 isTypingRef.current = false;
                 onTyping(false);
-            }, 2000); // Stop typing after 2s of inactivity
+            }, 2000); // 2 seconds of inactivity
         }
     };
 

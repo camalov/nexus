@@ -72,7 +72,7 @@ public class MessageService {
     }
 
     @Transactional
-    public void softDeleteMessage(Long messageId) {
+    public Message softDeleteMessage(Long messageId) {
         String currentUsername = SecurityContextHolder.getContext().getAuthentication().getName();
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new RuntimeException("Message not found with id: " + messageId));
@@ -83,6 +83,7 @@ public class MessageService {
 
         message.setDeleted(true);
         messageRepository.save(message);
+        return message;
     }
 
     @Transactional(readOnly = true)
