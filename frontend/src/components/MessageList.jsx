@@ -1,9 +1,9 @@
 import React from 'react';
-import { Box, Paper, Typography } from '@mui/material';
+import { Box, Paper, Typography, CircularProgress } from '@mui/material';
 import CheckIcon from '@mui/icons-material/Check';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 
-const MessageList = ({ messages, currentUser }) => {
+const MessageList = ({ messages, currentUser, onScroll, messageContainerRef, loadingMore }) => {
     const getStatusIcon = (msg) => {
         if (msg.senderUsername !== currentUser.username) {
             return null;
@@ -18,7 +18,8 @@ const MessageList = ({ messages, currentUser }) => {
     };
 
     return (
-        <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
+        <Box ref={messageContainerRef} onScroll={onScroll} sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
+            {loadingMore && <CircularProgress sx={{ display: 'block', margin: '10px auto' }} />}
             {messages.map((msg, index) => {
                 // FIX: Handle both optimistic and server messages
                 const senderUsername = msg.sender ? msg.sender.username : msg.senderUsername;
