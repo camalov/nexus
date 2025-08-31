@@ -1,7 +1,7 @@
-// frontend/src/components/ChatLayout.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Divider, Badge, styled, IconButton } from '@mui/material';
+import { Box, Grid, Paper, Typography, TextField, List, ListItem, ListItemButton, ListItemText, CircularProgress, Divider, Badge, styled, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import userService from '../services/userService';
 import messageService from '../services/messageService';
 import socketService from '../services/socketService';
@@ -10,11 +10,13 @@ import fileService from '../services/fileService';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 
+const telegramPattern = `url('data:image/svg+xml;utf8,<svg width="100" height="100" transform="scale(3)" opacity="0.05" xmlns="http://www.w3.org/2000/svg"><g fill-rule="evenodd"><g fill="%23000"><path d="M24.78 5.945c.39 0 .706.317.706.708v2.83c0 .39-.316.707-.706.707h-2.83a.707.707 0 0 1-.707-.707v-2.83c0-.39.316-.708.707-.708h2.83zm14.15 0c.39 0 .707.317.707.708v2.83c0 .39-.317.707-.707.707h-2.83a.707.707 0 0 1-.707-.707v-2.83c0-.39.317-.708.707-.708h2.83zm14.152 0c.39 0 .707.317.707.708v2.83c0 .39-.317.707-.707.707h-2.83a.707.707 0 0 1-.707-.707v-2.83c0-.39.317-.708.707-.708h2.83zM77.914 5.945c.39 0 .707.317.707.l_path_d_goes_here...zM92.064 5.945c.39 0 .707.317.707.708v2.83c0 .39-.317.707-.707.707h-2.83a.707.707 0 0 1-.707-.707v-2.83c0-.39.317-.708.707-.708h2.83z"/></g></g></svg>')`;
+
 const StyledBadge = styled(Badge)(({ theme, isOnline }) => ({
     '& .MuiBadge-badge': {
-        backgroundColor: isOnline ? '#44b700' : '#d3d3d3',
-        color: isOnline ? '#44b700' : '#d3d3d3',
-        boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+        backgroundColor: isOnline ? '#44b700' : '#808080',
+        color: isOnline ? '#44b700' : '#808080',
+        boxShadow: `0 0 0 2px #1e2732`,
     },
 }));
 
@@ -31,6 +33,9 @@ const ChatLayout = () => {
     const [unreadCounts, setUnreadCounts] = useState({});
     const [page, setPage] = useState(0);
     const [hasMoreMessages, setHasMoreMessages] = useState(true);
+
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     const currentUser = authService.getCurrentUser();
     const messagesEndRef = useRef(null);
@@ -249,68 +254,123 @@ const ChatLayout = () => {
     const displayedList = searchQuery.trim() ? searchResults : contacts;
 
     return (
-        <Box sx={{ flexGrow: 1, height: '100vh', display: 'flex' }}>
+        <Box sx={{ height: '100vh', width: '100vw', display: 'flex' }}>
             <Grid container sx={{ height: '100%' }}>
-                <Grid item xs={12} sm={4} md={3} sx={{ borderRight: { sm: '1px solid #ddd' }, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <Paper elevation={0} sx={{ p: 2 }}>
-                        <TextField fullWidth variant="outlined" label="Search Users" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                {/* Left Panel: Contacts List */}
+                <Grid item xs={12} sm={4} md={3} sx={{ 
+                    height: '100%', 
+                    display: isMobile && selectedUser ? 'none' : 'flex', 
+                    flexDirection: 'column', 
+                    backgroundColor: '#1e2732' 
+                }}>
+                    <Paper elevation={0} sx={{ p: 2, backgroundColor: '#2a3b4d' }}>
+                        <TextField 
+                            fullWidth 
+                            variant="outlined" 
+                            placeholder="Search..." 
+                            value={searchQuery} 
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            sx={{ 
+                                '& .MuiOutlinedInput-root': {
+                                    borderRadius: '20px',
+                                    backgroundColor: '#1e2732',
+                                    color: '#fff',
+                                    '& fieldset': { borderColor: 'transparent' },
+                                    '&:hover fieldset': { borderColor: '#5278a3' },
+                                    '&.Mui-focused fieldset': { borderColor: '#5278a3' },
+                                },
+                                '& .MuiOutlinedInput-input::placeholder': { color: '#a0a0a0' },
+                            }}
+                        />
                     </Paper>
-                    <Divider />
-                    {loading ? <CircularProgress sx={{ m: 'auto' }} /> : (
-                        <List sx={{ flexGrow: 1, overflow: 'auto' }}>
-                            {displayedList.map((user) => (
-                                <ListItem key={user.id} disablePadding>
-                                    <ListItemButton selected={selectedUser?.id === user.id} onClick={() => handleUserSelect(user)}>
-                                        <ListItemText
-                                            primary={
-                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <StyledBadge overlap="circular" anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} variant="dot" isOnline={user.isOnline}>
-                                                        <Typography component="span">{user.username}</Typography>
-                                                    </StyledBadge>
-                                                    {unreadCounts[user.username] > 0 && <Badge badgeContent={unreadCounts[user.username]} color="primary" />}
-                                                </Box>
-                                            }
-                                        />
-                                    </ListItemButton>
-                                </ListItem>
-                            ))}
-                        </List>
-                    )}
+                    <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+                        {loading ? <CircularProgress sx={{ m: 'auto', display: 'block', color: '#fff' }} /> : (
+                            <List sx={{ p: 0 }}>
+                                {displayedList.map((user) => (
+                                    <ListItem key={user.id} disablePadding>
+                                        <ListItemButton 
+                                            selected={selectedUser?.id === user.id} 
+                                            onClick={() => handleUserSelect(user)}
+                                            sx={{
+                                                '&.Mui-selected': { backgroundColor: '#5278a3' },
+                                                '&:hover': { backgroundColor: '#2a3b4d' },
+                                            }}
+                                        >
+                                            <ListItemText
+                                                primary={
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fff' }}>
+                                                        <StyledBadge overlap="circular" anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} variant="dot" isOnline={user.isOnline}>
+                                                            <Typography component="span">{user.username}</Typography>
+                                                        </StyledBadge>
+                                                        {unreadCounts[user.username] > 0 && <Badge badgeContent={unreadCounts[user.username]} color="primary" />}
+                                                    </Box>
+                                                }
+                                            />
+                                        </ListItemButton>
+                                    </ListItem>
+                                ))}
+                            </List>
+                        )}
+                    </Box>
                 </Grid>
-                <Grid item xs={12} sm={8} md={9} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+
+                {/* Right Panel: Chat Area */}
+                <Grid item xs={12} sm={8} md={9} sx={{ 
+                    height: '100%', 
+                    display: isMobile && !selectedUser ? 'none' : 'flex', 
+                    flexDirection: 'column', 
+                    backgroundColor: '#0e1621', 
+                    backgroundImage: telegramPattern 
+                }}>
                     {selectedUser ? (
                         <>
-                            <Paper elevation={2} sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Box>
-                                    <Typography variant="h6">{`Chat with ${selectedUser.username}`}</Typography>
-                                    {isTyping && <Typography variant="caption" sx={{ fontStyle: 'italic' }}>yazır...</Typography>}
+                            <Paper elevation={2} sx={{ p: 2, flexShrink: 0, backgroundColor: '#1e2732', color: '#fff' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        {isMobile && (
+                                            <IconButton onClick={() => setSelectedUser(null)} sx={{ color: '#fff', mr: 1 }}>
+                                                <ArrowBackIcon />
+                                            </IconButton>
+                                        )}
+                                        <Box>
+                                            <Typography variant="h6">{selectedUser.username}</Typography>
+                                            {isTyping && <Typography variant="caption" sx={{ fontStyle: 'italic', color: '#a0a0a0' }}>yazır...</Typography>}
+                                        </Box>
+                                    </Box>
+                                    {!isMobile && (
+                                        <IconButton onClick={() => setSelectedUser(null)} sx={{ color: '#fff' }}><CloseIcon /></IconButton>
+                                    )}
                                 </Box>
-                                <IconButton onClick={() => setSelectedUser(null)}><CloseIcon /></IconButton>
                             </Paper>
-                            {loadingMessages ? (
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                                    <CircularProgress />
-                                </Box>
-                            ) : (
-                                <MessageList
-                                    messages={messages}
-                                    currentUser={currentUser}
-                                    onScroll={handleScroll}
-                                    messageContainerRef={messageContainerRef}
-                                    loadingMore={loadingMore}
-                                    messagesEndRef={messagesEndRef}
-                                    onDeleteMessage={handleDeleteMessage}
+                            <Box
+                                ref={messageContainerRef}
+                                onScroll={handleScroll}
+                                sx={{ flexGrow: 1, overflowY: 'auto', p: 3 }}
+                            >
+                                {loadingMessages ? (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                                        <CircularProgress sx={{ color: '#fff' }}/>
+                                    </Box>
+                                ) : (
+                                    <MessageList
+                                        messages={messages}
+                                        currentUser={currentUser}
+                                        messagesEndRef={messagesEndRef}
+                                        onDeleteMessage={handleDeleteMessage}
+                                    />
+                                )}
+                            </Box>
+                            <Box sx={{ flexShrink: 0, p: 1, backgroundColor: '#1e2732' }}>
+                                <MessageInput
+                                    onSendMessage={handleSendMessage}
+                                    onTyping={handleTyping}
+                                    onFileSelect={handleFileSelect}
                                 />
-                            )}
-                            <MessageInput
-                                onSendMessage={handleSendMessage}
-                                onTyping={handleTyping}
-                                onFileSelect={handleFileSelect}
-                            />
+                            </Box>
                         </>
                     ) : (
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                            <Typography variant="h6" color="text.secondary">Select a user to start chatting</Typography>
+                            <Typography variant="h6" sx={{ color: '#a0a0a0' }}>Select a chat to start messaging</Typography>
                         </Box>
                     )}
                 </Grid>

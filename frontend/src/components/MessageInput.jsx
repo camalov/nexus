@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, TextField, Button, IconButton } from '@mui/material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import SendIcon from '@mui/icons-material/Send'; // Using SendIcon for a better look
 
 const MessageInput = ({ onSendMessage, onTyping, onFileSelect }) => {
     const [message, setMessage] = useState('');
@@ -67,19 +68,11 @@ const MessageInput = ({ onSendMessage, onTyping, onFileSelect }) => {
         if (file) {
             onFileSelect(file);
         }
-        // Reset the input value to allow selecting the same file again
         e.target.value = null;
     };
 
     return (
-        <Box component="form" onSubmit={handleSend} sx={{ p: 2, backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center' }}>
-            <TextField
-                fullWidth
-                variant="outlined"
-                placeholder="Type a message..."
-                value={message}
-                onChange={handleInputChange}
-            />
+        <Box component="form" onSubmit={handleSend} sx={{ p: 1, display: 'flex', alignItems: 'center', backgroundColor: '#1e2732' }}>
             <input
                 type="file"
                 ref={fileInputRef}
@@ -87,16 +80,45 @@ const MessageInput = ({ onSendMessage, onTyping, onFileSelect }) => {
                 style={{ display: 'none' }}
                 accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
             />
-            <IconButton onClick={handleAttachmentClick} sx={{ ml: 1 }}>
+            <IconButton onClick={handleAttachmentClick} sx={{ color: '#a0a0a0' }}>
                 <AttachFileIcon />
             </IconButton>
+            <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="Write a message..."
+                value={message}
+                onChange={handleInputChange}
+                size="small"
+                sx={{
+                    mx: 1,
+                    '& .MuiOutlinedInput-root': {
+                        borderRadius: '20px',
+                        backgroundColor: '#0e1621',
+                        color: '#fff',
+                        '& fieldset': { borderColor: 'transparent' },
+                        '&:hover fieldset': { borderColor: 'transparent' },
+                        '&.Mui-focused fieldset': { borderColor: 'transparent' },
+                    },
+                    '& .MuiOutlinedInput-input::placeholder': { color: '#a0a0a0' },
+                }}
+            />
             <Button
                 type="submit"
                 variant="contained"
                 color="primary"
-                sx={{ ml: 1 }}
+                sx={{
+                    borderRadius: '50%',
+                    minWidth: '48px',
+                    width: '48px',
+                    height: '48px',
+                    backgroundColor: '#5278a3',
+                    '&:hover': {
+                        backgroundColor: '#416082',
+                    },
+                }}
             >
-                Send
+                <SendIcon />
             </Button>
         </Box>
     );

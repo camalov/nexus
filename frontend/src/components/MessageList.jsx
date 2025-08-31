@@ -5,28 +5,33 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const MessageList = ({ messages, currentUser, onScroll, messageContainerRef, loadingMore, messagesEndRef, onDeleteMessage }) => {
+const MessageList = ({ messages, currentUser, onDeleteMessage, messagesEndRef }) => {
     const getStatusIcon = (msg) => {
         if (msg.senderUsername !== currentUser.username || msg.deleted) {
             return null;
         }
-        if (msg.status === 'READ') {
-            return <DoneAllIcon fontSize="small" sx={{ color: 'blue', ml: 0.5 }} />;
+        switch (msg.status) {
+            case 'READ':
+                // Blue double check for READ
+                return <DoneAllIcon fontSize="small" sx={{ color: '#4FC3F7', ml: 0.5 }} />;
+            case 'DELIVERED':
+                // Grey double check for DELIVERED
+                return <DoneAllIcon fontSize="small" sx={{ color: 'grey.700', ml: 0.5, opacity: 0.8 }} />;
+            case 'SENT':
+                // Grey single check for SENT
+                return <CheckIcon fontSize="small" sx={{ color: 'grey.700', ml: 0.5, opacity: 0.8 }} />;
+            default:
+                return null;
         }
-        if (msg.status === 'SENT' || msg.status === 'DELIVERED') {
-            return <CheckIcon fontSize="small" sx={{ ml: 0.5 }} />;
-        }
-        return null;
     };
 
-    const renderMessageContent = (msg) => {
+    const renderMessageContent = (msg, isSender) => {
         if (!msg || !msg.content) {
-            return null; // Safeguard for empty content
+            return null;
         }
 
-        // If message is soft-deleted, show the appropriate text.
         if (msg.deleted) {
-            return <Typography variant="body1" sx={{ fontStyle: 'italic', color: 'text.secondary' }}>[media deleted]</Typography>;
+            return <Typography variant="body2" sx={{ fontStyle: 'italic', color: isSender ? '#708b81' : '#a0a0a0' }}>[media deleted]</Typography>;
         }
 
         const baseUrl = window.location.origin.replace(':3000', ':8080') + '/nexus/api';
@@ -44,7 +49,7 @@ const MessageList = ({ messages, currentUser, onScroll, messageContainerRef, loa
             case 'FILE':
                 const fileName = msg.content.split('/').pop();
                 return (
-                    <Link href={fullPath} download target="_blank" rel="noopener noreferrer" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+                    <Link href={fullPath} download target="_blank" rel="noopener noreferrer" sx={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: isSender ? '#000' : 'inherit' }}>
                         <InsertDriveFileIcon sx={{ mr: 1 }} />
                         <Typography variant="body1">{fileName}</Typography>
                     </Link>
@@ -56,8 +61,7 @@ const MessageList = ({ messages, currentUser, onScroll, messageContainerRef, loa
     };
 
     return (
-        <Box ref={messageContainerRef} onScroll={onScroll} sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
-            {loadingMore && <CircularProgress sx={{ display: 'block', margin: '10px auto' }} />}
+        <Box sx={{ px: 1, py: 2 }}>
             {messages.map((msg) => {
                 const senderUsername = msg.sender ? msg.sender.username : msg.senderUsername;
                 const isSender = senderUsername === currentUser.username;
@@ -69,27 +73,33 @@ const MessageList = ({ messages, currentUser, onScroll, messageContainerRef, loa
                         sx={{
                             display: 'flex',
                             justifyContent: isSender ? 'flex-end' : 'flex-start',
-                            mb: 2,
+                            mb: 1,
                         }}
                     >
                         <Paper
-                            variant="outlined"
+                            variant="elevation"
+                            elevation={1}
                             sx={{
                                 p: 1.5,
-                                backgroundColor: isSender ? 'primary.main' : 'grey.300',
-                                color: isSender ? 'primary.contrastText' : 'text.primary',
-                                borderRadius: isSender ? '20px 20px 5px 20px' : '20px 20px 20px 5px',
+                                backgroundColor: isSender ? '#e1ffc7' : '#fff',
+                                color: '#000',
+                                borderRadius: isSender ? '15px 15px 3px 15px' : '15px 15px 15px 3px',
                                 maxWidth: '70%',
-                                display: 'flex',
-                                alignItems: 'center',
+                                wordWrap: 'break-word',
+                                position: 'relative', // Needed for absolute positioning of delete icon
                             }}
                         >
                             <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
-                                {renderMessageContent(msg)}
+                                <Box>
+                                    {renderMessageContent(msg, isSender)}
+                                    <Typography variant="caption" sx={{ color: isSender ? '#708b81' : '#a0a0a0', display: 'block', textAlign: 'right', mt: 0.5 }}>
+                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </Typography>
+                                </Box>
                                 {isSender && getStatusIcon(msg)}
                             </Box>
                             {isSender && isMedia && !msg.deleted && (
-                                <IconButton size="small" onClick={() => onDeleteMessage(msg.id)} sx={{ ml: 1, color: 'inherit', opacity: 0.7 }}>
+                                <IconButton size="small" onClick={() => onDeleteMessage(msg.id)} sx={{ position: 'absolute', top: 0, right: 0, color: '#000', opacity: 0.4 }}>
                                     <DeleteIcon fontSize="small" />
                                 </IconButton>
                             )}
