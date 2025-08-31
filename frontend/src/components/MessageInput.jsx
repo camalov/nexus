@@ -1,8 +1,9 @@
-// frontend/src/components/MessageInput.jsx
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, TextField, Button, IconButton } from '@mui/material';
+import { Box, TextField, IconButton, InputAdornment } from '@mui/material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
-import SendIcon from '@mui/icons-material/Send'; // Using SendIcon for a better look
+import SendIcon from '@mui/icons-material/Send';
+import MicIcon from '@mui/icons-material/Mic';
+import SentimentSatisfiedOutlinedIcon from '@mui/icons-material/SentimentSatisfiedOutlined';
 
 const MessageInput = ({ onSendMessage, onTyping, onFileSelect }) => {
     const [message, setMessage] = useState('');
@@ -17,9 +18,6 @@ const MessageInput = ({ onSendMessage, onTyping, onFileSelect }) => {
         if (value && !isTypingRef.current) {
             isTypingRef.current = true;
             onTyping(true);
-        } else if (!value && isTypingRef.current) {
-            isTypingRef.current = false;
-            onTyping(false);
         }
 
         if (typingTimeoutRef.current) {
@@ -30,32 +28,40 @@ const MessageInput = ({ onSendMessage, onTyping, onFileSelect }) => {
             typingTimeoutRef.current = setTimeout(() => {
                 isTypingRef.current = false;
                 onTyping(false);
-            }, 1500);
+            }, 2000); // Stop typing after 2s of inactivity
         }
     };
 
     useEffect(() => {
+        // Cleanup timeout on component unmount
         return () => {
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
             }
+            // Ensure typing indicator is turned off
+            if(isTypingRef.current) {
+                onTyping(false);
+            }
         };
-    }, []);
+    }, [onTyping]);
+
+    const stopTyping = () => {
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = null;
+        }
+        if (isTypingRef.current) {
+            isTypingRef.current = false;
+            onTyping(false);
+        }
+    }
 
     const handleSend = (e) => {
         e.preventDefault();
         if (message.trim()) {
             onSendMessage(message);
             setMessage('');
-
-            if (typingTimeoutRef.current) {
-                clearTimeout(typingTimeoutRef.current);
-                typingTimeoutRef.current = null;
-            }
-            if (isTypingRef.current) {
-                isTypingRef.current = false;
-                onTyping(false);
-            }
+            stopTyping();
         }
     };
 
@@ -68,58 +74,55 @@ const MessageInput = ({ onSendMessage, onTyping, onFileSelect }) => {
         if (file) {
             onFileSelect(file);
         }
-        e.target.value = null;
+        e.target.value = null; // Reset file input
     };
 
     return (
-        <Box component="form" onSubmit={handleSend} sx={{ p: 1, display: 'flex', alignItems: 'center', backgroundColor: '#1e2732' }}>
+        <Box component="form" onSubmit={handleSend} sx={{ display: 'flex', alignItems: 'center', p: '10px 16px' }}>
             <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 style={{ display: 'none' }}
-                accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx"
             />
-            <IconButton onClick={handleAttachmentClick} sx={{ color: '#a0a0a0' }}>
-                <AttachFileIcon />
+            <IconButton sx={{ color: '#a0a0a0' }}>
+                <SentimentSatisfiedOutlinedIcon />
             </IconButton>
+
             <TextField
                 fullWidth
-                variant="outlined"
-                placeholder="Write a message..."
+                variant="standard"
+                placeholder="Message"
                 value={message}
                 onChange={handleInputChange}
-                size="small"
-                sx={{
-                    mx: 1,
-                    '& .MuiOutlinedInput-root': {
+                autoComplete="off"
+                sx={{ mx: 1 }}
+                InputProps={{
+                    disableUnderline: true,
+                    endAdornment: (
+                        <InputAdornment position="end">
+                            <IconButton onClick={handleAttachmentClick} sx={{ color: '#a0a0a0' }}>
+                                <AttachFileIcon />
+                            </IconButton>
+                        </InputAdornment>
+                    ),
+                    sx: {
+                        bgcolor: '#242f3d',
                         borderRadius: '20px',
-                        backgroundColor: '#0e1621',
+                        p: '8px 15px',
                         color: '#fff',
-                        '& fieldset': { borderColor: 'transparent' },
-                        '&:hover fieldset': { borderColor: 'transparent' },
-                        '&.Mui-focused fieldset': { borderColor: 'transparent' },
-                    },
-                    '& .MuiOutlinedInput-input::placeholder': { color: '#a0a0a0' },
+                        fontSize: '0.95rem'
+                    }
                 }}
             />
-            <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                sx={{
-                    borderRadius: '50%',
-                    minWidth: '48px',
-                    width: '48px',
-                    height: '48px',
-                    backgroundColor: '#5278a3',
-                    '&:hover': {
-                        backgroundColor: '#416082',
-                    },
-                }}
-            >
-                <SendIcon />
-            </Button>
+
+            <IconButton type="submit" sx={{
+                bgcolor: '#5278a3',
+                color: '#fff',
+                '&:hover': { bgcolor: '#416082' }
+            }}>
+                {message.trim() ? <SendIcon /> : <MicIcon />}
+            </IconButton>
         </Box>
     );
 };

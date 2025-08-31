@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Container, Box, TextField, Button, Typography, Alert, Paper } from '@mui/material';
+import { Box, TextField, Button, Typography, Alert, Paper } from '@mui/material';
 import authService from '../services/authService';
 
 const RegisterPage = () => {
@@ -32,80 +32,80 @@ const RegisterPage = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, #71b7e6, #9b59b6)', // Telegram-like gradient
-                p: 2, // Add some padding for smaller screens
+                background: 'linear-gradient(135deg, #71b7e6, #9b59b6)',
+                p: 2,
             }}
         >
-            <Container component="main" maxWidth="sm" sx={{ display: 'flex', justifyContent: 'center' }}>
-                <Paper
-                    elevation={6}
-                    sx={{
-                        padding: { xs: 2, sm: 4 }, // Responsive padding
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        borderRadius: '15px', // Rounded corners
-                        backgroundColor: 'rgba(255, 255, 255, 0.95)', // Slight transparency
-                        backdropFilter: 'blur(10px)', // Frosted glass effect
-                        width: '100%',
-                        maxWidth: '450px', // Set a max-width for the form itself
-                    }}
-                >
-                    <Typography component="h1" variant="h5" sx={{ color: '#333' }}>
-                        Create your account
-                    </Typography>
-                    <Box component="form" onSubmit={handleRegister} noValidate sx={{ mt: 1, width: '100%' }}>
-                        <TextField
-                            margin="normal"
-                            required
-                            fullWidth
-                            id="username"
-                            label="Username"
-                            name="username"
-                            autoComplete="username"
-                            autoFocus
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                        />
-                        <TextField
-                            margin="normal"
-                            required
-                            fullWidth
-                            name="password"
-                            label="Password"
-                            type="password"
-                            id="password"
-                            autoComplete="new-password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                        {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
-                        <Button
-                            type="submit"
-                            fullWidth
-                            variant="contained"
-                            sx={{
-                                mt: 3,
-                                mb: 2,
-                                py: 1.5, // Taller button
-                                borderRadius: '8px',
-                                backgroundColor: '#5278a3', // Telegram blue
-                                '&:hover': {
-                                    backgroundColor: '#416082',
-                                },
-                            }}
-                            disabled={loading}
-                        >
-                            {loading ? 'Creating Account...' : 'Sign Up'}
-                        </Button>
-                        <Box sx={{ textAlign: 'center' }}>
-                            <Link to="/login" variant="body2" sx={{ color: '#5278a3' }}>
-                                {"Already have an account? Sign In"}
-                            </Link>
-                        </Box>
+            <Paper
+                component="main"
+                elevation={6}
+                sx={{
+                    padding: { xs: 3, sm: 4 },
+                    borderRadius: '16px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+                    maxWidth: '450px',
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                }}
+            >
+                <Typography component="h1" variant="h5" sx={{ color: '#333', mb: 3 }}>
+                    Create your account
+                </Typography>
+                <Box component="form" onSubmit={handleRegister} noValidate sx={{ mt: 1, width: '100%' }}>
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        id="username"
+                        label="Username"
+                        name="username"
+                        autoComplete="username"
+                        autoFocus
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        name="password"
+                        label="Password"
+                        type="password"
+                        id="password"
+                        autoComplete="new-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
+                    <Button
+                        type="submit"
+                        fullWidth
+                        variant="contained"
+                        sx={{
+                            mt: 3,
+                            mb: 2,
+                            py: 1.5,
+                            borderRadius: '8px',
+                            backgroundColor: '#5278a3',
+                            '&:hover': {
+                                backgroundColor: '#416082',
+                            },
+                        }}
+                        disabled={loading}
+                    >
+                        {loading ? 'Creating Account...' : 'Sign Up'}
+                    </Button>
+                    <Box sx={{ textAlign: 'center' }}>
+                        <Link to="/login" variant="body2" sx={{ color: '#5278a3' }}>
+                            {"Already have an account? Sign In"}
+                        </Link>
                     </Box>
-                </Paper>
-            </Container>
+                </Box>
+            </Paper>
         </Box>
     );
 };
