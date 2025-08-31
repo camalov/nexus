@@ -192,115 +192,121 @@ const ChatLayout = () => {
 
     const displayedList = searchQuery.trim() ? searchResults : contacts;
 
+    const LeftPanel = (
+        <Grid item xs={12} sm={4} md={3.5}
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                bgcolor: '#17212b',
+                borderRight: '1px solid #000'
+            }}
+        >
+            <Box sx={{ p: 2, borderBottom: '1px solid #000' }}>
+                <TextField
+                    fullWidth
+                    variant="standard"
+                    placeholder="Search..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    InputProps={{
+                        startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#6b7b8c' }} /></InputAdornment>,
+                        disableUnderline: true,
+                        sx: { bgcolor: '#242f3d', borderRadius: '20px', p: '6px 12px', color: '#fff' }
+                    }}
+                />
+            </Box>
+            <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+                {loadingContacts ? <CircularProgress sx={{ m: 'auto', display: 'block' }} /> : (
+                    <List sx={{ p: 0 }}>
+                        {displayedList.map((user) => (
+                            <ListItem key={user.id} disablePadding>
+                                <ListItemButton
+                                    selected={selectedUser?.id === user.id}
+                                    onClick={() => handleUserSelect(user)}
+                                    sx={{
+                                        p: 1.5,
+                                        '&.Mui-selected': { bgcolor: '#2b5278' },
+                                        '&:hover': { bgcolor: '#2a3b4d' },
+                                    }}
+                                >
+                                    <Avatar sx={{ bgcolor: '#607d8b', mr: 2 }}>{getInitials(user.username)}</Avatar>
+                                    <ListItemText
+                                        primary={<Typography variant="subtitle1" sx={{ color: '#fff', fontWeight: '600' }}>{user.username}</Typography>}
+                                        secondary={<Typography variant="body2" sx={{ color: '#a0a0a0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>Last message placeholder...</Typography>}
+                                    />
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', ml: 1, alignSelf: 'flex-start' }}>
+                                        <Typography variant="caption" sx={{ color: '#a0a0a0' }}>10:30 PM</Typography>
+                                        {unreadCounts[user.username] > 0 &&
+                                            <Badge badgeContent={unreadCounts[user.username]} color="primary" sx={{ mt: 0.5 }} />
+                                        }
+                                    </Box>
+                                </ListItemButton>
+                            </ListItem>
+                        ))}
+                    </List>
+                )}
+            </Box>
+        </Grid>
+    );
+
+    const RightPanel = (
+        <Grid item xs={12} sm={8} md={8.5}
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%'
+            }}
+        >
+            {selectedUser ? (
+                <>
+                    <Paper elevation={0} sx={{ p: 1.5, flexShrink: 0, bgcolor: '#17212b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #000' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            {isMobile && (
+                                <IconButton onClick={() => setSelectedUser(null)} sx={{ color: '#fff', mr: 1 }}><ArrowBackIcon /></IconButton>
+                            )}
+                            <Avatar sx={{ bgcolor: '#607d8b', mr: 2 }}>{getInitials(selectedUser.username)}</Avatar>
+                            <Box>
+                                <Typography variant="h6">{selectedUser.username}</Typography>
+                                <Typography variant="caption" sx={{ color: '#a0a0a0' }}>{isTyping ? 'typing...' : (selectedUser.isOnline ? 'online' : 'offline')}</Typography>
+                            </Box>
+                        </Box>
+                        <Box>
+                            <IconButton sx={{ color: '#a0a0a0' }}><SearchIcon /></IconButton>
+                            <IconButton sx={{ color: '#a0a0a0' }}><CallIcon /></IconButton>
+                            <IconButton sx={{ color: '#a0a0a0' }}><MoreVertIcon /></IconButton>
+                        </Box>
+                    </Paper>
+
+                    <Box ref={messageContainerRef} onScroll={handleScroll} sx={{ flexGrow: 1, overflowY: 'auto', p: 3, backgroundColor: '#0e1621', backgroundImage: telegramPattern }}>
+                        <MessageList messages={messages} currentUser={currentUser} onDeleteMessage={handleDeleteMessage} />
+                        <div ref={messagesEndRef} />
+                    </Box>
+
+                    <Box sx={{ flexShrink: 0, bgcolor: '#17212b', borderTop: '1px solid #000' }}>
+                        <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} onFileSelect={handleFileSelect} />
+                    </Box>
+                </>
+            ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center' }}>
+                    <Typography variant="h5" sx={{color: '#a0a0a0'}}>Nexus Web</Typography>
+                    <Typography sx={{ mt: 1, color: '#6b7b8c' }}>Select a chat to start messaging</Typography>
+                </Box>
+            )}
+        </Grid>
+    );
+
     return (
         <Box sx={{ height: '100vh', width: '100vw', display: 'flex', bgcolor: '#0e1621' }}>
             <Grid container sx={{ height: '100%', width: '100%' }}>
-                {/* Left Panel: Contacts List */}
-                <Grid item xs={12} sm={4} md={3.5}
-                    sx={{
-                        display: { xs: selectedUser && isMobile ? 'none' : 'flex', sm: 'flex' },
-                        flexDirection: 'column',
-                        height: '100%',
-                        bgcolor: '#17212b',
-                        borderRight: '1px solid #000'
-                    }}
-                >
-                    <Box sx={{ p: 2, borderBottom: '1px solid #000' }}>
-                        <TextField
-                            fullWidth
-                            variant="standard"
-                            placeholder="Search..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            InputProps={{
-                                startAdornment: <InputAdornment position="start"><SearchIcon sx={{ color: '#6b7b8c' }} /></InputAdornment>,
-                                disableUnderline: true,
-                                sx: { bgcolor: '#242f3d', borderRadius: '20px', p: '6px 12px', color: '#fff' }
-                            }}
-                        />
-                    </Box>
-                    <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
-                        {loadingContacts ? <CircularProgress sx={{ m: 'auto', display: 'block' }} /> : (
-                            <List sx={{ p: 0 }}>
-                                {displayedList.map((user) => (
-                                    <ListItem key={user.id} disablePadding>
-                                        <ListItemButton
-                                            selected={selectedUser?.id === user.id}
-                                            onClick={() => handleUserSelect(user)}
-                                            sx={{
-                                                p: 1.5,
-                                                '&.Mui-selected': { bgcolor: '#2b5278' },
-                                                '&:hover': { bgcolor: '#2a3b4d' },
-                                            }}
-                                        >
-                                            <Avatar sx={{ bgcolor: '#607d8b', mr: 2 }}>{getInitials(user.username)}</Avatar>
-                                            <ListItemText
-                                                primary={<Typography variant="subtitle1" sx={{ color: '#fff', fontWeight: '600' }}>{user.username}</Typography>}
-                                                secondary={<Typography variant="body2" sx={{ color: '#a0a0a0', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>Last message placeholder...</Typography>}
-                                            />
-                                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', ml: 1, alignSelf: 'flex-start' }}>
-                                                <Typography variant="caption" sx={{ color: '#a0a0a0' }}>10:30 PM</Typography>
-                                                {unreadCounts[user.username] > 0 &&
-                                                    <Badge badgeContent={unreadCounts[user.username]} color="primary" sx={{ mt: 0.5 }} />
-                                                }
-                                            </Box>
-                                        </ListItemButton>
-                                    </ListItem>
-                                ))}
-                            </List>
-                        )}
-                    </Box>
-                </Grid>
-
-                {/* Right Panel: Chat Area */}
-                <Grid item xs={12} sm={8} md={8.5}
-                    sx={{
-                        display: { xs: selectedUser ? 'flex' : 'none', sm: 'flex' },
-                        flexDirection: 'column',
-                        height: '100%',
-                        ...(!selectedUser && {
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            textAlign: 'center'
-                        })
-                    }}
-                >
-                    {selectedUser ? (
-                        <>
-                            <Paper elevation={0} sx={{ p: 1.5, flexShrink: 0, bgcolor: '#17212b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #000' }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    {isMobile && (
-                                        <IconButton onClick={() => setSelectedUser(null)} sx={{ color: '#fff', mr: 1 }}><ArrowBackIcon /></IconButton>
-                                    )}
-                                    <Avatar sx={{ bgcolor: '#607d8b', mr: 2 }}>{getInitials(selectedUser.username)}</Avatar>
-                                    <Box>
-                                        <Typography variant="h6">{selectedUser.username}</Typography>
-                                        <Typography variant="caption" sx={{ color: '#a0a0a0' }}>{isTyping ? 'typing...' : (selectedUser.isOnline ? 'online' : 'offline')}</Typography>
-                                    </Box>
-                                </Box>
-                                <Box>
-                                    <IconButton sx={{ color: '#a0a0a0' }}><SearchIcon /></IconButton>
-                                    <IconButton sx={{ color: '#a0a0a0' }}><CallIcon /></IconButton>
-                                    <IconButton sx={{ color: '#a0a0a0' }}><MoreVertIcon /></IconButton>
-                                </Box>
-                            </Paper>
-
-                            <Box ref={messageContainerRef} onScroll={handleScroll} sx={{ flexGrow: 1, overflowY: 'auto', p: 3, backgroundColor: '#0e1621', backgroundImage: telegramPattern }}>
-                                <MessageList messages={messages} currentUser={currentUser} onDeleteMessage={handleDeleteMessage} />
-                                <div ref={messagesEndRef} />
-                            </Box>
-
-                            <Box sx={{ flexShrink: 0, bgcolor: '#17212b', borderTop: '1px solid #000' }}>
-                                <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} onFileSelect={handleFileSelect} />
-                            </Box>
-                        </>
-                    ) : (
-                        <>
-                             <Typography variant="h5" sx={{color: '#a0a0a0'}}>Nexus Web</Typography>
-                             <Typography sx={{ mt: 1, color: '#6b7b8c' }}>Select a chat to start messaging</Typography>
-                        </>
-                    )}
-                </Grid>
+                {isMobile ? (
+                    selectedUser ? RightPanel : LeftPanel
+                ) : (
+                    <>
+                        {LeftPanel}
+                        {RightPanel}
+                    </>
+                )}
             </Grid>
         </Box>
     );

@@ -19,3 +19,10 @@ spring:
 
 file:
   upload-dir: ./uploads
+
+app:
+  jwt:
+    # IMPORTANT: This is a sample key. Generate a new secure random key for your production environment.
+    # You can use an online generator or a command like: openssl rand -base64 32
+    secret: bXlzdXBlcnNlY3JldGtleW15c3VwZXJzZWNyZXRrZXlteXN1cGVyc2VjcmV0a2V5MTIz
+    expiration-ms: 86400000 # 24 hours

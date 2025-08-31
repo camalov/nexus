@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Box, TextField, Button, Typography, Alert, Paper } from '@mui/material';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Box, TextField, Button, Typography, Alert, Avatar, Link } from '@mui/material';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import authService from '../services/authService';
 
 const RegisterPage = () => {
@@ -14,7 +15,6 @@ const RegisterPage = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
-
         try {
             await authService.register(username, password);
             navigate('/login');
@@ -32,31 +32,30 @@ const RegisterPage = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, #71b7e6, #9b59b6)',
-                p: 2,
+                backgroundColor: '#181818',
             }}
         >
-            <Paper
-                component="main"
-                elevation={6}
+            <Box
                 sx={{
-                    padding: { xs: 3, sm: 4 },
-                    borderRadius: '16px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(10px)',
-                    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-                    maxWidth: '450px',
+                    maxWidth: 400,
                     width: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
+                    padding: { xs: 3, sm: 4 },
+                    textAlign: 'center',
                 }}
             >
-                <Typography component="h1" variant="h5" sx={{ color: '#333', mb: 3 }}>
+                <Avatar sx={{ width: 56, height: 56, backgroundColor: '#5278a3', margin: '0 auto 16px' }}>
+                    <LockOutlinedIcon />
+                </Avatar>
+                <Typography variant="h5" fontWeight="bold" color="#fff" component="h1">
                     Create your account
                 </Typography>
-                <Box component="form" onSubmit={handleRegister} noValidate sx={{ mt: 1, width: '100%' }}>
+                <Typography color="grey.500" sx={{ mb: 4 }}>
+                    Please enter your username and password.
+                </Typography>
+
+                <Box component="form" onSubmit={handleRegister} noValidate sx={{ width: '100%' }}>
                     <TextField
+                        variant="filled"
                         margin="normal"
                         required
                         fullWidth
@@ -67,8 +66,29 @@ const RegisterPage = () => {
                         autoFocus
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
+                        InputLabelProps={{
+                            style: { color: 'grey.500' },
+                        }}
+                        sx={{
+                            backgroundColor: '#282828',
+                            borderRadius: '8px',
+                            '& .MuiFilledInput-root': {
+                                backgroundColor: '#282828',
+                                borderRadius: '8px',
+                                '&:before, &:after, &:hover:before, &:hover:after': {
+                                    borderBottom: 'none'
+                                }
+                            },
+                            '& .MuiFilledInput-root.Mui-focused': {
+                                boxShadow: `0 0 0 2px #8774e1`
+                            },
+                            '& .MuiInputBase-input': {
+                                color: '#fff',
+                            }
+                        }}
                     />
                     <TextField
+                        variant="filled"
                         margin="normal"
                         required
                         fullWidth
@@ -79,8 +99,28 @@ const RegisterPage = () => {
                         autoComplete="new-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
+                        InputLabelProps={{
+                            style: { color: 'grey.500' },
+                        }}
+                        sx={{
+                            backgroundColor: '#282828',
+                            borderRadius: '8px',
+                            '& .MuiFilledInput-root': {
+                                backgroundColor: '#282828',
+                                borderRadius: '8px',
+                                '&:before, &:after, &:hover:before, &:hover:after': {
+                                    borderBottom: 'none'
+                                }
+                            },
+                            '& .MuiFilledInput-root.Mui-focused': {
+                                boxShadow: `0 0 0 2px #8774e1`
+                            },
+                            '& .MuiInputBase-input': {
+                                color: '#fff',
+                            }
+                        }}
                     />
-                    {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
+                    {error && <Alert severity="error" sx={{ mt: 2, width: '100%', backgroundColor: 'transparent', color: '#f44336', justifyContent: 'center' }}>{error}</Alert>}
                     <Button
                         type="submit"
                         fullWidth
@@ -90,22 +130,22 @@ const RegisterPage = () => {
                             mb: 2,
                             py: 1.5,
                             borderRadius: '8px',
-                            backgroundColor: '#5278a3',
+                            backgroundColor: '#8774e1',
+                            textTransform: 'none',
+                            fontWeight: 'bold',
                             '&:hover': {
-                                backgroundColor: '#416082',
+                                backgroundColor: '#7a68c8',
                             },
                         }}
                         disabled={loading}
                     >
-                        {loading ? 'Creating Account...' : 'Sign Up'}
+                        {loading ? 'Creating Account...' : 'SIGN UP'}
                     </Button>
-                    <Box sx={{ textAlign: 'center' }}>
-                        <Link to="/login" variant="body2" sx={{ color: '#5278a3' }}>
-                            {"Already have an account? Sign In"}
-                        </Link>
-                    </Box>
+                    <Link component={RouterLink} to="/login" sx={{ color: 'grey.500', textDecoration: 'none' }}>
+                        {"Already have an account? Sign In"}
+                    </Link>
                 </Box>
-            </Paper>
+            </Box>
         </Box>
     );
 };
