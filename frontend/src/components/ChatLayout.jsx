@@ -72,6 +72,11 @@ const ChatLayout = () => {
                 const updateUserStatus = (userList) => userList.map(u => u.username === presenceUpdate.username ? { ...u, isOnline: presenceUpdate.isOnline } : u);
                 setContacts(prev => updateUserStatus(prev));
                 setSearchResults(prev => updateUserStatus(prev));
+
+                // If the presence update is for the currently selected user, update their state too
+                if (selectedUserRef.current && selectedUserRef.current.username === presenceUpdate.username) {
+                    setSelectedUser(prev => ({ ...prev, isOnline: presenceUpdate.isOnline }));
+                }
             });
         });
         return () => socketService.disconnect();
@@ -163,13 +168,7 @@ const ChatLayout = () => {
         }
     };
 
-    const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id || messages[messages.length - 1].tempId : null;
-
-    useEffect(() => {
-        if (messages.length > 0) {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [lastMessageId]);
+    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
     const handleUserSelect = (user) => {
         if (selectedUser?.id === user.id) return;

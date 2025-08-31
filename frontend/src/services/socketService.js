@@ -12,7 +12,7 @@ class SocketService {
     connect(onConnectedCallback) {
         const user = authService.getCurrentUser();
         if (user && user.token && !this.stompClient) {
-            const socketFactory = () => new SockJS('/nexus/api/ws');
+            const socketFactory = () => new SockJS('http://localhost:3000/nexus/api/ws');
 
             this.stompClient = new Client({
                 webSocketFactory: socketFactory,
