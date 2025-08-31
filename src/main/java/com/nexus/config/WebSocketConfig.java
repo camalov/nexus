@@ -44,7 +44,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // The /ws endpoint is where the client will connect to the WebSocket server.
         // Add allowedOrigins to fix Cross-Origin Resource Sharing (CORS) issues with the frontend dev server.
-        registry.addEndpoint("/ws").setAllowedOrigins("http://localhost:3000").withSockJS();
+        registry.addEndpoint("/ws")
+                .setAllowedOrigins("http://localhost:3000", "http://188.191.107.33:3000")
+                .withSockJS();
     }
 
     @Override
