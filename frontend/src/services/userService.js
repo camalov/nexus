@@ -19,18 +19,18 @@ apiClient.interceptors.request.use(
     }
 );
 
-export const getContacts = () => {
+// YENİ ƏLAVƏ EDİLƏN FUNKSİYA
+export const getContactsWithOnlineStatus = () => {
     return apiClient.get('/users/contacts');
 };
 
-// FIX: Changed '?query=' to '?username=' to match the backend controller
 export const searchUsers = (query) => {
     return apiClient.get(`/users/search?username=${query}`);
 };
 
 const userService = {
     searchUsers,
-    getContacts,
+    getContactsWithOnlineStatus, // Exporta əlavə edildi
 };
 
 export default userService;

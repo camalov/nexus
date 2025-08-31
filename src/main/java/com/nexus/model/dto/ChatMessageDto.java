@@ -7,6 +7,7 @@ import lombok.Data;
 @Data
 public class ChatMessageDto {
     private Long id; // Add this field
+    private String tempId;
     private String senderUsername;
     private String recipientUsername;
     private String content;

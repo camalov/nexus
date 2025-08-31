@@ -15,5 +15,6 @@ public interface MessageMapper {
     @Mapping(source = "sender.username", target = "senderUsername")
     @Mapping(source = "recipient.username", target = "recipientUsername")
     @Mapping(source = "status", target = "status") // Add this mapping
+    @Mapping(target = "tempId", ignore = true)
     ChatMessageDto messageToChatMessageDto(Message message);
 }

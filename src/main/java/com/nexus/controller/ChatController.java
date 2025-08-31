@@ -27,6 +27,7 @@ public class ChatController {
 
         // Convert the saved message entity back to a DTO to ensure all fields are correct
         ChatMessageDto messageToSend = messageMapper.messageToChatMessageDto(savedMessage);
+        messageToSend.setTempId(chatMessageDto.getTempId());
 
         // Send the message to the recipient
         messagingTemplate.convertAndSendToUser(
