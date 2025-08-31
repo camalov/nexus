@@ -163,7 +163,13 @@ const ChatLayout = () => {
         }
     };
 
-    useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+    const lastMessageId = messages.length > 0 ? messages[messages.length - 1].id || messages[messages.length - 1].tempId : null;
+
+    useEffect(() => {
+        if (messages.length > 0) {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [lastMessageId]);
 
     const handleUserSelect = (user) => {
         if (selectedUser?.id === user.id) return;
