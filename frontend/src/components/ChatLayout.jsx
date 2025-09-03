@@ -24,7 +24,7 @@ const ChatLayout = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [contacts, setContacts] = useState([]);
     const [searchResults, setSearchResults] = useState([]);
-    const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedUserId, setSelectedUserId] = useState(null);
     const [messages, setMessages] = useState([]);
     const [loadingContacts, setLoadingContacts] = useState(true);
     const [loadingMessages, setLoadingMessages] = useState(false);
@@ -33,6 +33,11 @@ const ChatLayout = () => {
     const [unreadCounts, setUnreadCounts] = useState({});
     const [page, setPage] = useState(0);
     const [hasMoreMessages, setHasMoreMessages] = useState(true);
+
+    const selectedUser = React.useMemo(() =>
+        contacts.find(c => c.id === selectedUserId),
+        [contacts, selectedUserId]
+    );
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -88,11 +93,6 @@ const ChatLayout = () => {
                 const updateUserStatus = (userList) => userList.map(u => u.username === presenceUpdate.username ? { ...u, isOnline: presenceUpdate.isOnline } : u);
                 setContacts(prev => updateUserStatus(prev));
                 setSearchResults(prev => updateUserStatus(prev));
-
-                // ADD THIS BLOCK TO FIX THE BUG
-                if (selectedUserRef.current && selectedUserRef.current.username === presenceUpdate.username) {
-                    setSelectedUser(prev => ({ ...prev, isOnline: presenceUpdate.isOnline }));
-                }
             });
         });
         return () => socketService.disconnect();
@@ -163,7 +163,7 @@ const ChatLayout = () => {
         };
 
         fetchInitialMessages();
-    }, [selectedUser, currentUser.id]); // Dependency array is now stable
+    }, [selectedUserId, currentUser.id]); // Depends on the stable ID now
 
     // We keep the old fetchMessages function, but simplified, for loading MORE messages on scroll.
     const fetchMoreMessages = async () => {
@@ -193,8 +193,8 @@ const ChatLayout = () => {
     }, [lastMessageId]);
 
     const handleUserSelect = (user) => {
-        if (selectedUser?.id === user.id) return;
-        setSelectedUser(user);
+        if (selectedUserId === user.id) return;
+        setSelectedUserId(user.id);
         setUnreadCounts(prev => ({ ...prev, [user.username]: 0 }));
     };
 
@@ -312,7 +312,7 @@ const ChatLayout = () => {
                     <Paper elevation={0} sx={{ p: 1.5, flexShrink: 0, bgcolor: '#17212b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #000' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             {isMobile && (
-                                <IconButton onClick={() => setSelectedUser(null)} sx={{ color: '#fff', mr: 1 }}><ArrowBackIcon /></IconButton>
+                                <IconButton onClick={() => setSelectedUserId(null)} sx={{ color: '#fff', mr: 1 }}><ArrowBackIcon /></IconButton>
                             )}
                             <Avatar sx={{ bgcolor: '#607d8b', mr: 2 }}>{getInitials(selectedUser.username)}</Avatar>
                             <Box>
