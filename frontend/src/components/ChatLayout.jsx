@@ -118,11 +118,7 @@ const ChatLayout = () => {
         const debouncedSearch = setTimeout(async () => {
             try {
                 const response = await userService.searchUsers(searchQuery);
-                const onlineStatusMap = new Map(contacts.map(c => [c.username, c.isOnline]));
-                const resultsWithStatus = response.data
-                    .filter(user => user.username !== currentUser.username)
-                    .map(user => ({ ...user, isOnline: onlineStatusMap.get(user.username) || false }));
-                setSearchResults(resultsWithStatus);
+                setSearchResults(response.data.filter(user => user.username !== currentUser.username));
             } catch (error) {
                 console.error('Failed to search users:', error);
                 setSearchResults([]);
