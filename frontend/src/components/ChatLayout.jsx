@@ -194,6 +194,12 @@ const ChatLayout = () => {
 
     const handleUserSelect = (user) => {
         if (selectedUserId === user.id) return;
+
+        // If the user is from search results and not in contacts, add them
+        if (!contacts.some(c => c.id === user.id)) {
+            setContacts(prev => [user, ...prev]);
+        }
+
         setSelectedUserId(user.id);
         setUnreadCounts(prev => ({ ...prev, [user.username]: 0 }));
     };
