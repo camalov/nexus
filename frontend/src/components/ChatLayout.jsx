@@ -55,13 +55,14 @@ const ChatLayout = () => {
         const fetchContacts = async () => {
             setLoadingContacts(true);
             try {
-                const response = await userService.searchUsers('');
+                // REVERTED: Use the correct service to get only contacts based on message history
+                const response = await userService.getContactsWithOnlineStatus();
                 // Normalize the 'online' property to 'isOnline' for consistency
-                const allUsers = response.data.map(user => ({
+                const contactsWithStatus = response.data.map(user => ({
                     ...user,
                     isOnline: user.online
                 }));
-                setContacts(allUsers.filter(user => user.username !== currentUser.username));
+                setContacts(contactsWithStatus);
             } catch (error) { console.error('Failed to fetch contacts:', error); }
             setLoadingContacts(false);
         };
@@ -104,10 +105,7 @@ const ChatLayout = () => {
             });
 
             socketService.subscribe('/topic/presence', (presenceUpdate) => {
-                // FINAL FIX: Normalize presence update from WebSocket to use 'isOnline' consistently.
-                // The backend might send 'online' or 'isOnline'. This handles both.
                 const newStatus = presenceUpdate.online !== undefined ? presenceUpdate.online : presenceUpdate.isOnline;
-
                 const updateUserStatus = (userList) => userList.map(u => {
                     if (u.username === presenceUpdate.username) {
                         return { ...u, isOnline: newStatus };
@@ -131,7 +129,6 @@ const ChatLayout = () => {
         const debouncedSearch = setTimeout(async () => {
             try {
                 const response = await userService.searchUsers(searchQuery);
-                // Also normalize search results for consistency
                 const normalizedResults = response.data.map(user => ({
                     ...user,
                     isOnline: user.online
