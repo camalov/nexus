@@ -125,7 +125,7 @@ const ChatLayout = () => {
             }
         }, 300);
         return () => clearTimeout(debouncedSearch);
-    }, [searchQuery, currentUser.username, contacts]);
+    }, [searchQuery, currentUser.username]);
 
     // This useEffect hook now handles the INITIAL loading of messages for a selected user.
     // Its dependency array is stable, which prevents the infinite loop.
