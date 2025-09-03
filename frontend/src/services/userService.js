@@ -19,6 +19,19 @@ apiClient.interceptors.request.use(
     }
 );
 
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 403) {
+            authService.logout();
+            // Using window.location is a direct way to force a page change.
+            // This is suitable for forcing a user to the login page when their session is invalid.
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 const getContactsWithOnlineStatus = () => {
     return apiClient.get('/users/contacts');
 };
