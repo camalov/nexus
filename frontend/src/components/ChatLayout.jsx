@@ -47,35 +47,45 @@ const ChatLayout = () => {
     }, [selectedUser]);
 
     useEffect(() => {
+        const fetchContacts = async () => {
+            setLoadingContacts(true);
+            try {
+                const response = await userService.getContactsWithOnlineStatus();
+                setContacts(response.data);
+            } catch (error) {
+                console.error('Failed to fetch contacts:', error);
+            } finally {
+                setLoadingContacts(false);
+            }
+        };
+
         socketService.connect(() => {
+            // After connection, fetch contacts to get initial online statuses
+            fetchContacts();
+
+            // Subscribe to message queue
             socketService.subscribe(`/user/${currentUser.username}/queue/messages`, (newMessage) => {
                 setMessages(prev => {
                     const messages = [...prev];
-                    // Find if the message already exists (by real ID or temp ID)
                     const existingMsgIndex = messages.findIndex(msg =>
                         (msg.id && msg.id === newMessage.id) ||
                         (msg.tempId && msg.tempId === newMessage.tempId)
                     );
-
                     if (existingMsgIndex > -1) {
-                        // If it exists, replace it (handles temp->real update and delete update)
                         messages[existingMsgIndex] = newMessage;
                         return messages;
-                    } else {
-                        // If it's a new message from another user, add it
-                        if (newMessage.senderUsername !== currentUser.username) {
-                            return [...messages, newMessage];
-                        }
+                    } else if (newMessage.senderUsername !== currentUser.username) {
+                        return [...messages, newMessage];
                     }
-                    return messages; // Return original if it's a duplicate new message from self
+                    return messages;
                 });
-
-                // Mark as read if it's from the other user in the current chat
                 const currentChatUser = selectedUserRef.current;
                 if (currentChatUser && newMessage.senderUsername === currentChatUser.username) {
                     socketService.sendMessage('/app/chat.markAsRead', { messageId: newMessage.id, status: 'READ' });
                 }
             });
+
+            // Subscribe to status updates (typing, read receipts)
             socketService.subscribe(`/user/${currentUser.username}/queue/status`, (statusUpdate) => {
                 const currentChatUser = selectedUserRef.current;
                 if (statusUpdate.hasOwnProperty('messageId')) {
@@ -84,6 +94,8 @@ const ChatLayout = () => {
                     setIsTyping(statusUpdate.typing || statusUpdate.isTyping);
                 }
             });
+
+            // Subscribe to presence updates (online/offline status)
             socketService.subscribe('/topic/presence', (presenceUpdate) => {
                 const updateUserStatus = (userList) => userList.map(u => u.username === presenceUpdate.username ? { ...u, isOnline: presenceUpdate.isOnline } : u);
                 setContacts(prev => updateUserStatus(prev));
@@ -93,20 +105,9 @@ const ChatLayout = () => {
                 }
             });
         });
+
         return () => socketService.disconnect();
     }, [currentUser.username]);
-
-    useEffect(() => {
-        const fetchContacts = async () => {
-            setLoadingContacts(true);
-            try {
-                const response = await userService.getContactsWithOnlineStatus();
-                setContacts(response.data);
-            } catch (error) { console.error('Failed to fetch contacts:', error); }
-            setLoadingContacts(false);
-        };
-        fetchContacts();
-    }, []);
 
     useEffect(() => {
         if (!searchQuery.trim()) {
