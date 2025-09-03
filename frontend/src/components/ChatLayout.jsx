@@ -88,6 +88,8 @@ const ChatLayout = () => {
                 const updateUserStatus = (userList) => userList.map(u => u.username === presenceUpdate.username ? { ...u, isOnline: presenceUpdate.isOnline } : u);
                 setContacts(prev => updateUserStatus(prev));
                 setSearchResults(prev => updateUserStatus(prev));
+
+                // ADD THIS BLOCK TO FIX THE BUG
                 if (selectedUserRef.current && selectedUserRef.current.username === presenceUpdate.username) {
                     setSelectedUser(prev => ({ ...prev, isOnline: presenceUpdate.isOnline }));
                 }
